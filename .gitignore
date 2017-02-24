@@ -35,3 +35,12 @@ jspm_packages
 
 # Optional REPL history
 .node_repl_history
+
+
+.gitignore
+.idea/workspace.xml
+src/main/resources/
+src/test/
+target/
+.idea/libraries
+.idea/vcs.xml
