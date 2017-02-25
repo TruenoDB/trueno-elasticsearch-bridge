@@ -4,6 +4,9 @@ import com.corundumstudio.socketio.Configuration;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.corundumstudio.socketio.listener.DataListener;
+import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.ListenableActionFuture;
+import org.elasticsearch.action.search.SearchResponse;
 
 import java.util.Map;
 
@@ -33,10 +36,16 @@ public class Server {
         server.addEventListener("search", SearchObject.class, new DataListener<SearchObject>() {
             @Override
             public void onData(SocketIOClient client, SearchObject data, AckRequest ackRequest) {
+                /* get time */
+                long startTime = System.currentTimeMillis();
                 /* get results */
                 Map<String,Object>[] results = eClient.search(data);
+                /* print time */
+                long estimatedTime = System.currentTimeMillis() - startTime;
+                System.out.println("Execution time: " + estimatedTime +"ms");
                 /* send back result */
                 ackRequest.sendAckData(results);
+
             }
         });
         /* set bulk event listener */

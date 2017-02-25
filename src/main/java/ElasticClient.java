@@ -1,9 +1,17 @@
+import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.collect.HppcMaps;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.search.SearchHit;
+import org.msgpack.MessagePack;
+import org.msgpack.template.Template;
+import org.msgpack.template.Templates;
+import org.msgpack.type.Value;
+import org.msgpack.unpacker.Converter;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.io.PrintStream;
@@ -51,15 +59,11 @@ public class ElasticClient {
         }
     }
 
+
     /* connect to elasticsearch using transport client */
     public Map<String,Object>[] search(SearchObject data) {
 
         try{
-
-            // System.out.println("query: " + data.getQuery());
-            // System.out.println("index: " + data.getIndex());
-            // System.out.println("type: " + data.getType());
-            // System.out.println("size: " + data.getSize());
 
             /* build query */
            SearchResponse resp =  this.client.prepareSearch(data.getIndex())
@@ -77,16 +81,16 @@ public class ElasticClient {
                 /* add map to array, note: a map is the equivalent of a JSON object */
                 sources.add(h.getSource());
             }
+
+
             /* returning array of strings */
             return sources.toArray(new Map[sources.size()]);
 
         }catch (Exception e){
             e.printStackTrace(new PrintStream(System.out));
         }
-
         return null;
     }
-
 
 }
 

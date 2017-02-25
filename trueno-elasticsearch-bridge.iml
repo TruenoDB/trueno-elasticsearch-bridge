@@ -71,5 +71,8 @@
     <orderEntry type="library" name="Maven: com.twitter:jsr166e:1.1.0" level="project" />
     <orderEntry type="library" name="Maven: org.apache.logging.log4j:log4j-api:2.7" level="project" />
     <orderEntry type="library" name="Maven: org.apache.logging.log4j:log4j-core:2.7" level="project" />
+    <orderEntry type="library" name="Maven: org.msgpack:msgpack:0.6.12" level="project" />
+    <orderEntry type="library" name="Maven: com.googlecode.json-simple:json-simple:1.1.1" level="project" />
+    <orderEntry type="library" name="Maven: org.javassist:javassist:3.18.1-GA" level="project" />
   </component>
 </module>
