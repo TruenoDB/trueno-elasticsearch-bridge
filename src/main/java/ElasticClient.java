@@ -1,16 +1,11 @@
-import org.elasticsearch.action.ListenableActionFuture;
+
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.collect.HppcMaps;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.index.query.QueryStringQueryBuilder;
 import org.elasticsearch.search.SearchHit;
-import org.msgpack.MessagePack;
-import org.msgpack.template.Template;
-import org.msgpack.template.Templates;
-import org.msgpack.type.Value;
-import org.msgpack.unpacker.Converter;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -61,27 +56,29 @@ public class ElasticClient {
 
 
     /* connect to elasticsearch using transport client */
-    public Map<String,Object>[] search(SearchObject data) {
+    public Map<String,Object>[] search(SearchObject[] dataLst) {
+
+        /* collecting results */
+        ArrayList<Map<String,Object>> sources = new ArrayList<>();
 
         try{
 
-            /* build query */
-           SearchResponse resp =  this.client.prepareSearch(data.getIndex())
-                    .setTypes(data.getType())
-                    .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
-                    .setSize(data.getSize())
-                    .setQuery(data.getQuery()).get();
+            for(SearchObject data : dataLst){
+                /* build query */
+                SearchResponse resp =  this.client.prepareSearch(data.getIndex())
+                        .setTypes(data.getType())
+                        .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+                        .setSize(data.getSize())
+                        .setQuery(data.getQuery()).get();
 
-            SearchHit[] results = resp.getHits().getHits();
+                SearchHit[] results = resp.getHits().getHits();
 
-            /* collecting results */
-            ArrayList<Map<String,Object>> sources = new ArrayList<>();
-            /* for each hit result */
-            for(SearchHit h: results){
+                /* for each hit result */
+                for(SearchHit h: results){
                 /* add map to array, note: a map is the equivalent of a JSON object */
-                sources.add(h.getSource());
+                    sources.add(h.getSource());
+                }
             }
-
 
             /* returning array of strings */
             return sources.toArray(new Map[sources.size()]);

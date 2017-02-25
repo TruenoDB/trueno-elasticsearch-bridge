@@ -33,9 +33,9 @@ public class Server {
         final SocketIOServer server = new SocketIOServer(config);
 
         /* set search event listener */
-        server.addEventListener("search", SearchObject.class, new DataListener<SearchObject>() {
+        server.addEventListener("search", SearchObject[].class, new DataListener<SearchObject[]>() {
             @Override
-            public void onData(SocketIOClient client, SearchObject data, AckRequest ackRequest) {
+            public void onData(SocketIOClient client, SearchObject[] data, AckRequest ackRequest) {
                 /* get time */
                 long startTime = System.currentTimeMillis();
                 /* get results */
