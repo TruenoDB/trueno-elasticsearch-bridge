@@ -33,19 +33,19 @@ public class Server {
         final SocketIOServer server = new SocketIOServer(config);
 
         /* set search event listener */
-        server.addEventListener("search", SearchObject[].class, new DataListener<SearchObject[]>() {
+        server.addEventListener("search", SearchObject.class, new DataListener<SearchObject>() {
             @Override
-            public void onData(SocketIOClient client, SearchObject[] data, AckRequest ackRequest) {
+            public void onData(SocketIOClient client, SearchObject data, AckRequest ackRequest) {
                 /* get time */
                 long startTime = System.currentTimeMillis();
                 /* get results */
                 Map<String,Object>[] results = eClient.search(data);
+
                 /* print time */
                 long estimatedTime = System.currentTimeMillis() - startTime;
                 System.out.println("Execution time: " + estimatedTime +"ms");
                 /* send back result */
                 ackRequest.sendAckData(results);
-
             }
         });
         /* set bulk event listener */
@@ -53,7 +53,8 @@ public class Server {
             @Override
             public void onData(SocketIOClient client, BulkObject data, AckRequest ackRequest) {
 
-
+               String result = eClient.bulk(data);
+                ackRequest.sendAckData(result);
             }
         });
 

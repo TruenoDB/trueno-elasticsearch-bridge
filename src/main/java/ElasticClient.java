@@ -1,4 +1,6 @@
 
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.transport.TransportClient;
@@ -56,29 +58,28 @@ public class ElasticClient {
 
 
     /* connect to elasticsearch using transport client */
-    public Map<String,Object>[] search(SearchObject[] dataLst) {
+    public Map<String,Object>[] search(SearchObject data) {
 
         /* collecting results */
         ArrayList<Map<String,Object>> sources = new ArrayList<>();
 
         try{
 
-            for(SearchObject data : dataLst){
-                /* build query */
-                SearchResponse resp =  this.client.prepareSearch(data.getIndex())
-                        .setTypes(data.getType())
-                        .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
-                        .setSize(data.getSize())
-                        .setQuery(data.getQuery()).get();
+            /* build query */
+            SearchResponse resp =  this.client.prepareSearch(data.getIndex())
+                    .setTypes(data.getType())
+                    .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+                    .setSize(data.getSize())
+                    .setQuery(data.getQuery()).get();
 
-                SearchHit[] results = resp.getHits().getHits();
+            SearchHit[] results = resp.getHits().getHits();
 
-                /* for each hit result */
-                for(SearchHit h: results){
-                /* add map to array, note: a map is the equivalent of a JSON object */
-                    sources.add(h.getSource());
-                }
+            /* for each hit result */
+            for(SearchHit h: results){
+            /* add map to array, note: a map is the equivalent of a JSON object */
+                sources.add(h.getSource());
             }
+
 
             /* returning array of strings */
             return sources.toArray(new Map[sources.size()]);
@@ -87,6 +88,46 @@ public class ElasticClient {
             e.printStackTrace(new PrintStream(System.out));
         }
         return null;
+    }
+
+    public String bulk(BulkObject bulkData) {
+        try {
+
+            String index = bulkData.getIndex();
+            String[][] operations = bulkData.getOperations();
+
+            System.out.println("index: " + index);
+            long totalstartTime = System.currentTimeMillis();
+            BulkRequestBuilder bulkRequest = this.client.prepareBulk();
+            for (String[] info : operations) {
+                if (info[0].equals("index")) {
+                    /*
+                    info[0] = index or delete
+                    info[1] = type {v, e}
+                    info[2] = id
+                    info[3] = '{name:pedro,age:15}'
+                     */
+                    bulkRequest.add(this.client.prepareIndex(index, info[1], info[2]).setSource(info[3]));
+                    System.out.println(index + " " + info[0] + " " + info[1] + " " + info[2] + " " + info[3]);
+                    continue;
+                }
+                if (!info[0].equals("delete")) continue;
+                bulkRequest.add(this.client.prepareDelete(index, info[1], info[2]));
+                System.out.println(index + " " + info[0] + " " + info[1] + " " + info[2] + " " + info[3]);
+            }
+
+            BulkResponse bulkResponse = (BulkResponse)bulkRequest.get();
+            long totalestimatedTime = System.currentTimeMillis() - totalstartTime;
+            System.out.println("time ms: " + totalestimatedTime);
+            if (bulkResponse.hasFailures()) {
+                return bulkResponse.buildFailureMessage();
+            }
+            return "";
+        }
+        catch (Exception e) {
+            e.printStackTrace(new PrintStream(System.out));
+            return null;
+        }
     }
 
 }
