@@ -40,7 +40,6 @@ jspm_packages
 .gitignore
 .idea/workspace.xml
 src/main/resources/
-src/test/
 target/
 .idea/libraries
 .idea/vcs.xml
