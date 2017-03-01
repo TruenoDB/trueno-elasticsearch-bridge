@@ -13,6 +13,7 @@
     "csv-parser": "^1.11.0",
     "jsonpack": "^1.1.5",
     "msgpack5": "^3.4.1",
+    "progress": "^1.1.8",
     "socket.io-client": "^1.7.3"
   }
 }

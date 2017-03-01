@@ -97,41 +97,6 @@ function singleReads() {
     })
 }
 
-function buildBulk(b, reject) {
-    /* the bulk operations array */
-    let operations = [];
-
-    /* for each operation build the bulk corresponding operation */
-    b.forEach((e)=> {
-        /* content to be constructed according to the operation */
-        let meta = {};
-        switch (e.op) {
-            case 'ex_persist':
-                meta = {"index": {"_type": e.content.type}};
-                /* setting id if present */
-                if (!Number.isInteger(e.content.obj.id)) {
-                    reject('All vertices and edges must have an integer id');
-                    return;
-                }
-                /* setting id if present */
-                meta.index._id = e.content.obj.id;
-
-                /* adding meta */
-                operations.push(meta);
-                /* adding content */
-                operations.push(e.content.obj);
-                break;
-            case 'ex_destroy':
-                meta = {"delete": {"_type": e.content.type, _id: e.content.obj.id}};
-                /* adding meta */
-                operations.push(meta);
-                break;
-        }
-    });
-
-    return operations;
-}
-
 socket.on('connect', function(){
     console.log('connected');
     /* start reading */
