@@ -1,22 +1,34 @@
 
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.fieldstats.FieldStats;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.index.mapper.object.ObjectMapper;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Map;
 
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
 /**
- * Created by Victor, edited by Servio on 2017.02.18.
+ * Created by Victor, Servio
  */
 public class ElasticClient {
 
@@ -94,12 +106,13 @@ public class ElasticClient {
         try {
 
             String index = bulkData.getIndex();
+            System.out.println("index: " + index);
             String[][] operations = bulkData.getOperations();
 
-            System.out.println("index: " + index);
-            long totalstartTime = System.currentTimeMillis();
+            long totalStartTime = System.currentTimeMillis();
             BulkRequestBuilder bulkRequest = this.client.prepareBulk();
             for (String[] info : operations) {
+
                 if (info[0].equals("index")) {
                     /*
                     info[0] = index or delete
@@ -107,18 +120,32 @@ public class ElasticClient {
                     info[2] = id
                     info[3] = '{name:pedro,age:15}'
                      */
-                    bulkRequest.add(this.client.prepareIndex(index, info[1], info[2]).setSource(info[3]));
-                    System.out.println(index + " " + info[0] + " " + info[1] + " " + info[2] + " " + info[3]);
-                    continue;
-                }
-                if (!info[0].equals("delete")) continue;
-                bulkRequest.add(this.client.prepareDelete(index, info[1], info[2]));
-                System.out.println(index + " " + info[0] + " " + info[1] + " " + info[2] + " " + info[3]);
-            }
+                    //bulkRequest.add(this.client.prepareIndex(index, info[1], info[2]).setSource(info[3]));
+                    bulkRequest.add(this.client.prepareIndex(index, info[1], info[2])
+                            .setSource(jsonBuilder()
+                                    .startObject()
+                                    .field("id", "id")
+                                    //.field("testDate", new FieldStats.Date())
+                                    .field("label", "movie1")
+                                    .endObject()
+                            )
+                    );
+                    //System.out.println(index + " " + info[0] + " " + info[1] + " " + info[2] + " " + info[3]);
 
-            BulkResponse bulkResponse = (BulkResponse)bulkRequest.get();
-            long totalestimatedTime = System.currentTimeMillis() - totalstartTime;
-            System.out.println("time ms: " + totalestimatedTime);
+                    continue;
+                }//if
+
+                if (!info[0].equals("delete")) continue;
+
+                bulkRequest.add(this.client.prepareDelete(index, info[1], info[2]));
+
+                //System.out.println(index + " " + info[0] + " " + info[1] + " " + info[2]);
+            }//for
+
+            BulkResponse bulkResponse = bulkRequest.get();//(BulkResponse)
+            long totalEstimatedTime = System.currentTimeMillis() - totalStartTime;
+            System.out.println("time ms: " + totalEstimatedTime);
+
             if (bulkResponse.hasFailures()) {
                 return bulkResponse.buildFailureMessage();
             }
@@ -128,7 +155,7 @@ public class ElasticClient {
             e.printStackTrace(new PrintStream(System.out));
             return null;
         }
-    }
+    }//bulk
 
-}
+}//class
 
