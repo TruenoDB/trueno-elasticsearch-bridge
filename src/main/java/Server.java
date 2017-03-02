@@ -4,6 +4,8 @@ import com.corundumstudio.socketio.Configuration;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.corundumstudio.socketio.listener.DataListener;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
 import java.util.Map;
 
@@ -67,8 +69,18 @@ public class Server {
             }
         });
 
+
         /* starting socket server */
-        server.start();
+        server.startAsync().addListener(new FutureListener<Void>() {
+            @Override
+            public void operationComplete(Future<Void> future) throws Exception {
+                if (future.isSuccess()) {
+                    System.out.println("Bridge Server Started");
+                } else {
+                    System.out.println("Bridge Server Failure");
+                }
+            }
+        });
 
     }//main
 
