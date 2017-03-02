@@ -39,12 +39,12 @@ var hrend = [];
 
 function getDirector(director) {
 
-    director = "White Girls Got Azz Too";
+    //director = "White Girls Got Azz Too";
 
     var q = "{\"term\":{\"prop.name\":\"" + director + "\"}}";
 
     return new Promise((resolve, reject) => {
-        if(++counter <= limit){
+       // if(++counter <= limit){
             /* the payload object */
             var payload = {
                 '@class': 'SearchObject',
@@ -60,7 +60,7 @@ function getDirector(director) {
                 total++;
                 resolve();
             });
-        }
+        //}
     });
 }
 

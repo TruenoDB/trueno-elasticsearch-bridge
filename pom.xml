@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.trueno.elasticsearch.bridge</groupId>
     <artifactId>elasticsearch-bridge</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
     <dependencies>
         <dependency>
             <groupId>com.corundumstudio.socketio</groupId>
@@ -74,12 +74,14 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.trueno.driver.lib.core.search.ElasticClient</mainClass>
+                            <mainClass>Server</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
+                    <finalName>trueno-elastic-bridge-server</finalName>
+                    <appendAssemblyId>false</appendAssemblyId>
                 </configuration>
             </plugin>
         </plugins>
