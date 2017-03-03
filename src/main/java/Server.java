@@ -41,15 +41,15 @@ public class Server {
                 //System.out.println(data);
 
                 /* get time */
-                long startTime = System.currentTimeMillis();
+                //long startTime = System.currentTimeMillis();
 
                 /* get results */
                 Map<String,Object>[] results = eClient.search(data);
 
                 /* print time */
-                long estimatedTime = System.currentTimeMillis() - startTime;
+                //long estimatedTime = System.currentTimeMillis() - startTime;
 
-                System.out.println("Execution time: " + estimatedTime +"ms");
+                //System.out.println("Execution time: " + estimatedTime +"ms");
 
                 /* send back result */
                 ackRequest.sendAckData(results);

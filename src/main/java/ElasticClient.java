@@ -89,13 +89,10 @@ public class ElasticClient {
             }
 
 
-            /* returning array of strings */
-            return sources.toArray(new Map[sources.size()]);
-
         }catch (Exception e){
             e.printStackTrace(new PrintStream(System.out));
         }
-        return null;
+        return sources.toArray(new Map[sources.size()]);
     }
 
     /**
@@ -147,7 +144,7 @@ public class ElasticClient {
                 return bulkResponse.buildFailureMessage();
             }
 
-            return "[batch finished]";
+            return "[]";
         }
         catch (Exception e) {
             e.printStackTrace(new PrintStream(System.out));
