@@ -3,6 +3,7 @@
  * ElasticSearch Client: includes connect(), search(), and bulk() operations
  */
 
+import com.google.common.collect.ImmutableMap;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchResponse;
@@ -84,8 +85,10 @@ public class ElasticClient {
 
             /* for each hit result */
             for(SearchHit h: results){
-            /* add map to array, note: a map is the equivalent of a JSON object */
-                sources.add(h.getSource());
+
+                /* add map to array, note: a map is the equivalent of a JSON object */
+                //sources.add(h.getSource());
+                sources.add(ImmutableMap.of("_source", h.getSource()));
             }
 
             return sources.toArray(new Map[sources.size()]);
