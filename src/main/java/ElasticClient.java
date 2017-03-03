@@ -88,11 +88,12 @@ public class ElasticClient {
                 sources.add(h.getSource());
             }
 
+            return sources.toArray(new Map[sources.size()]);
 
         }catch (Exception e){
-            e.printStackTrace(new PrintStream(System.out));
+            System.out.println(e);
         }
-        return sources.toArray(new Map[sources.size()]);
+        return new Map[0];
     }
 
     /**
