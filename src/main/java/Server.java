@@ -9,8 +9,10 @@ import io.netty.util.concurrent.FutureListener;
 
 import java.util.Map;
 
+
 /**
- * Created by victor on 2/24/17.
+ * @author victor
+ * @since  02/24/2017
  */
 public class Server {
 
@@ -41,15 +43,14 @@ public class Server {
                 //System.out.println(data);
 
                 /* get time */
-                //long startTime = System.currentTimeMillis();
+//                long startTime = System.currentTimeMillis();
 
                 /* get results */
                 Map<String,Object>[] results = eClient.search(data);
 
                 /* print time */
-                //long estimatedTime = System.currentTimeMillis() - startTime;
-
-                //System.out.println("Execution time: " + estimatedTime +"ms");
+//                long estimatedTime = System.currentTimeMillis() - startTime;
+//                System.out.println("Execution time: " + estimatedTime +"ms");
 
                 /* send back result */
                 ackRequest.sendAckData(results);

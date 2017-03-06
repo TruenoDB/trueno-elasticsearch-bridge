@@ -31,7 +31,7 @@ var connectionOptions =  {
 };
 
 /* socket.io */
-var socket = Socket('http://localhost:8007',connectionOptions);
+var socket = Socket('http://localhost:8008',connectionOptions);
 
 /* variables to keep track of batches and progress */
 var limit = 10000000;

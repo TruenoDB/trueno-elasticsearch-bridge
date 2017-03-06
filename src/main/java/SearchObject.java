@@ -6,6 +6,7 @@ public class SearchObject {
     private String query;
     private String index;
     private String type;
+    private String key;
     private int size;
 
     public String getQuery() {
@@ -40,4 +41,11 @@ public class SearchObject {
         this.size = size;
     }
 
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
 }

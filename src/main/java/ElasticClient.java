@@ -1,13 +1,11 @@
-/**
- * Created by Victor, Servio
- * ElasticSearch Client: includes connect(), search(), and bulk() operations
- */
-
 import com.google.common.collect.ImmutableMap;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
@@ -19,6 +17,18 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Map;
 
+
+/**
+ * @author Victor
+ * @author Servio
+ * @author ebarsallo
+ * Operations available include:
+ * <ul>
+ *     <li>connect</li>
+ *     <li>search</li>
+ *     <li>bulk</li>
+ * </ul>
+ */
 public class ElasticClient {
 
     /* Private properties */
@@ -44,12 +54,16 @@ public class ElasticClient {
 
         try{
             /* prepare cluster settings */
-            Settings settings = Settings.settingsBuilder()
+//            Settings settings = Settings.settingsBuilder()
+//                    .put("cluster.name", this.clusterName)
+//                    .build();
+            Settings settings = Settings.builder()
                     .put("cluster.name", this.clusterName)
                     .build();
 
             /* instantiate transport build */
-            this.client = TransportClient.builder().settings(settings).build();
+//            this.client = TransportClient.builder().settings(settings).build();
+            this.client = new PreBuiltTransportClient(settings);
 
             /* set addresses */
             for(String addr: this.addresses){
@@ -74,12 +88,18 @@ public class ElasticClient {
 
         try{
 
+            QueryBuilder qb;
+
+//            qb = QueryBuilders.wrapperQuery(data.getQuery());
+//            qb = QueryBuilders.termQuery("prop.filmId", data.getKey());
+            qb = QueryBuilders.termQuery("filmId", data.getKey());
+
             /* build query */
             SearchResponse resp =  this.client.prepareSearch(data.getIndex())
                     .setTypes(data.getType())
                     .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
                     .setSize(data.getSize())
-                    .setQuery(data.getQuery()).get();
+                    .setQuery(qb).get();
 
             SearchHit[] results = resp.getHits().getHits();
 
@@ -94,10 +114,30 @@ public class ElasticClient {
             return sources.toArray(new Map[sources.size()]);
 
         }catch (Exception e){
-            System.out.println(e);
+//            System.out.println("==> " + e);
+            e.printStackTrace();
         }
         return new Map[0];
     }
+
+
+    public String create(IndexObject indexData) {
+        try {
+
+            System.out.println("Create index: " + indexData.getIndex());
+
+            this.client.admin().indices().prepareCreate(indexData.getIndex())
+                    .setSettings(new java.util.HashMap<String, Integer>()
+                            .put("number_of_shards", 1))
+                    .addMapping("mappings", indexData.getMapping()).get();
+
+            return "OK";
+        } catch (Exception e) {
+            e.printStackTrace(new PrintStream(System.out));
+            return null;
+        }
+    }
+
 
     /**
      * The bulk API allows one to index and delete several documents in a single request.
@@ -125,6 +165,7 @@ public class ElasticClient {
                     info[2] = id
                     info[3] = '{name:pedro,age:15}'
                      */
+//                    System.out.println("==> " + info[1] + " " + info[2] + " " + info[3]);
                     /* adding document to the batch */
                     bulkRequest.add(this.client.prepareIndex(index, info[1], info[2]).setSource(info[3]));
 
@@ -142,9 +183,12 @@ public class ElasticClient {
 
             long totalEstimatedTime = System.currentTimeMillis() - totalStartTime;
 
-            System.out.println("batch time ms: " + totalEstimatedTime);
+            System.out.println("[" + index + "] batch time ms: " + totalEstimatedTime
+                    + " " + bulkResponse.getIngestTookInMillis()
+                    + " " + bulkResponse.buildFailureMessage());
 
             if (bulkResponse.hasFailures()) {
+                System.out.println("Fail: " + bulkResponse.buildFailureMessage());
                 return bulkResponse.buildFailureMessage();
             }
 
