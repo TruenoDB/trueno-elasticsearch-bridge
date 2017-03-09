@@ -6,11 +6,14 @@
 import com.google.common.collect.ImmutableMap;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 
 import java.net.InetAddress;
@@ -74,14 +77,24 @@ public class ElasticClient {
 
         try{
 
-            /* build query */
-            SearchResponse resp =  this.client.prepareSearch(data.getIndex())
-                    .setTypes(data.getType())
-                    .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
-                    .setSize(data.getSize())
-                    .setQuery(data.getQuery()).get();
+//            System.out.println(data.getIndex());
+//            System.out.println(data.getType());
+//            System.out.println(data.getSize());
+//            System.out.println(data.getQuery());
+
+            SearchRequestBuilder b = this.client.prepareSearch(data.getIndex())
+            .setTypes(data.getType())
+            .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+            .setSize(data.getSize())
+            .setQuery(QueryBuilders.wrapperQuery(data.getQuery()));
+
+//            System.out.println(b.toString());
+
+            SearchResponse resp = b.get();
 
             SearchHit[] results = resp.getHits().getHits();
+
+            //System.out.println("Hits are " + results.length);
 
             /* for each hit result */
             for(SearchHit h: results){
@@ -89,6 +102,7 @@ public class ElasticClient {
                 /* add map to array, note: a map is the equivalent of a JSON object */
                 //sources.add(h.getSource());
                 sources.add(ImmutableMap.of("_source", h.getSource()));
+                //System.out.println(h.getSource());
             }
 
             return sources.toArray(new Map[sources.size()]);
