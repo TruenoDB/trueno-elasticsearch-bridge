@@ -1,3 +1,6 @@
+package org.trueno.es.bridge;
+
+
 import com.google.common.collect.ImmutableMap;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -67,7 +70,9 @@ public class ElasticClient {
 
             /* set addresses */
             for(String addr: this.addresses){
-                this.client.addTransportAddress(new InetSocketTransportAddress(new InetSocketAddress( InetAddress.getByName(addr), 9300)));
+                this.client.addTransportAddress(
+                        new InetSocketTransportAddress(new InetSocketAddress( InetAddress.getByName(addr), 9300))
+                );
             }
 
         }catch (Exception e){
@@ -78,7 +83,7 @@ public class ElasticClient {
     /**
      * The search API allows you to execute a search query and get back search hits that match the query.
      * The query can either be provided using a simple query string as a parameter, or using a request body
-     * @param data -> SearchObject
+     * @param data -> org.trueno.es.bridge.SearchObject
      * @return results -> ArrayList
      */
     public Map<String,Object>[] search(SearchObject data) {
@@ -141,7 +146,7 @@ public class ElasticClient {
 
     /**
      * The bulk API allows one to index and delete several documents in a single request.
-     * @param bulkData -> BulkObject [Index, Operations[][]]
+     * @param bulkData -> org.trueno.es.bridge.BulkObject [Index, Operations[][]]
      * @return [batch finished] -> String
      */
     public String bulk(BulkObject bulkData) {

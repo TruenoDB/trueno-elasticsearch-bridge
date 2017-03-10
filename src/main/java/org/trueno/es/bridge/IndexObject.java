@@ -1,3 +1,5 @@
+package org.trueno.es.bridge;
+
 /**
  * Created by ebarsallo on 3/5/17.
  */

@@ -1,9 +1,12 @@
+package org.trueno.es.bridge;
+
 
 import com.corundumstudio.socketio.AckRequest;
 import com.corundumstudio.socketio.Configuration;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.corundumstudio.socketio.listener.DataListener;
+
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
@@ -16,27 +19,35 @@ import java.util.Map;
  */
 public class Server {
 
-    public static void main(String args[]) throws InterruptedException{
 
-        /* instantiate the configuration */
-        Configuration config = new Configuration();
+    protected Configuration config = new Configuration();
 
-        /* set the listening hostname */
-        config.setHostname(args[0]);
+    private final ElasticClient eClient;
+    private final SocketIOServer server;
 
-        /* set the listening port */
-        config.setPort(Integer.parseInt(args[1]));
 
-        /* instantiate the elasticsearch client */
-        final ElasticClient eClient = new ElasticClient("trueno", args[0]);
+    /**
+     * Construct a {@link Server}
+     * @param hostname
+     * @param port
+     */
+    Server (String hostname, int port) {
 
-        /* connect to elasticSearch server */
-        eClient.connect();
+        /* Set the listening hostname */
+        this.config.setHostname(hostname);
 
-        /* instantiate the server */
-        final SocketIOServer server = new SocketIOServer(config);
+        /* Set the listening port */
+        this.config.setPort(port);
 
-        /* set search event listener */
+        /* Instantiate the ElasticSearch client and connect to Server */
+        this.eClient = new ElasticClient("trueno", hostname);
+        this.eClient.connect();
+
+        /* Instantiate the server */
+        this.server = new SocketIOServer(config);
+
+        /* Set event listeners */
+        /* Search */
         server.addEventListener("search", SearchObject.class, new DataListener<SearchObject>() {
             @Override
             public void onData(SocketIOClient client, SearchObject data, AckRequest ackRequest) {
@@ -55,9 +66,9 @@ public class Server {
                 /* send back result */
                 ackRequest.sendAckData(results);
             }
-        });//search event listener
+        });
 
-        /* set bulk event listener */
+        /* Bulk Operations */
         server.addEventListener("bulk", BulkObject.class, new DataListener<BulkObject>() {
             @Override
             public void onData(SocketIOClient client, BulkObject data, AckRequest ackRequest) {
@@ -71,18 +82,36 @@ public class Server {
         });
 
 
-        /* starting socket server */
+        /* Starting Socket Server */
         server.startAsync().addListener(new FutureListener<Void>() {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
                 if (future.isSuccess()) {
-                    System.out.println("Bridge Server Started");
+                    System.out.println("ES bridge-server started on " + port);
                 } else {
-                    System.out.println("Bridge Server Failure");
+                    System.out.println("ES bridge-server failure");
                 }
             }
         });
 
-    }//main
+    }
 
-}//Class
+
+    /* Main */
+    public static void main(String args[]) throws InterruptedException {
+
+        String host;
+        int port;
+
+        if (args.length < 2) {
+            System.out.println("Usage: Server hostname port");
+            System.exit(1);
+        }
+
+        host = args[0];
+        port = Integer.parseInt(args[1]);
+
+        new Server(host, port);
+    }
+
+}
