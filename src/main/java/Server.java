@@ -25,8 +25,10 @@ public class Server {
         /* set the listening port */
         config.setPort(Integer.parseInt(args[1]));
 
+        String homePath = "/Users/victor/Desktop/truenodb/trueno/lib/core/binaries/elasticsearch/bin";
+
         /* instantiate the elasticsearch client */
-        final ElasticClient eClient = new ElasticClient("trueno", args[0]);
+        final ElasticClient eClient = new ElasticClient("trueno", args[0], homePath);
 
         /* connect to elasticSearch server */
         eClient.connect();
@@ -39,6 +41,7 @@ public class Server {
             @Override
             public void onData(SocketIOClient client, SearchObject data, AckRequest ackRequest) {
                 //System.out.println(data);
+               // System.out.println("request");
 
                 /* get time */
                 //long startTime = System.currentTimeMillis();

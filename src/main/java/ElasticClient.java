@@ -9,11 +9,14 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.node.Node;
+import org.elasticsearch.node.NodeBuilder;
 import org.elasticsearch.search.SearchHit;
 
 import java.net.InetAddress;
@@ -25,19 +28,22 @@ import java.util.Map;
 public class ElasticClient {
 
     /* Private properties */
-    private TransportClient client;
+    private Client client;
     private String clusterName;
+    private String pathHome;
     private String[] addresses;
+    private Node node;
 
     /**
      * Constructor
      * @param clusterName -> String
      * @param addresses -> String
      */
-    public ElasticClient(String clusterName, String addresses) {
+    public ElasticClient(String clusterName, String addresses, String pathHome) {
         /* set cluster name and addresses */
         this.clusterName = clusterName;
         this.addresses = addresses.split(",");
+        this.pathHome = pathHome;
     }
 
     /**
@@ -45,23 +51,15 @@ public class ElasticClient {
      */
     public void connect() {
 
-        try{
-            /* prepare cluster settings */
-            Settings settings = Settings.settingsBuilder()
-                    .put("cluster.name", this.clusterName)
-                    .build();
-
-            /* instantiate transport build */
-            this.client = TransportClient.builder().settings(settings).build();
-
-            /* set addresses */
-            for(String addr: this.addresses){
-                this.client.addTransportAddress(new InetSocketTransportAddress(new InetSocketAddress( InetAddress.getByName(addr), 9300)));
-            }
-
-        }catch (Exception e){
-           System.out.println(e);
-        }
+        /* Instantiate service nodeClient */
+        Settings.Builder b = NodeBuilder.nodeBuilder().settings();
+        b.put("path.home",this.pathHome );
+        b.put("node.name","bridge" );
+        b.put("node.master","true" );
+        b.put("node.data","true" );
+        //this.node = NodeBuilder.nodeBuilder().settings(b).client(true).local(false).clusterName(this.clusterName).node();
+        this.node = NodeBuilder.nodeBuilder().settings(b).clusterName(this.clusterName).node();
+        this.client = node.client();
     }
 
     /**
