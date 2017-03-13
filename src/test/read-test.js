@@ -24,7 +24,7 @@ var connectionOptions =  {
     "transports" : ["websocket"]                //forces the transport to be only websocket. Server needs to be setup as well/
 }
 
-var socket = Socket('http://localhost:8008',connectionOptions);
+var socket = Socket('http://localhost:8012',connectionOptions);
 var limit = 10000000;
 var total = 0;
 var counter = 0;
@@ -55,7 +55,7 @@ function getDirector(director) {
             };
             /* adding the payload */
             socket.emit('search', payload, function(results) {
-                console.log(results);
+               // console.log(results);
                 var hrend = process.hrtime(hrstart);
                 //console.info("Execution time: %dms", hrend[1]/1000000);
                 total++;
