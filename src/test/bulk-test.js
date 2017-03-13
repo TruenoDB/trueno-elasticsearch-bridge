@@ -41,7 +41,7 @@ var counter = 0;
 var bulkOperations = [];
 
 /* Elastic Search Index to be used */
-const indexName = "movies";
+const indexName = "alo";
 
 /* source datasets/documents [download datasets from java-script-driver] */
 const vertices = require('./vertices.json');
