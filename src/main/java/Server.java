@@ -26,9 +26,10 @@ public class Server {
         config.setPort(Integer.parseInt(args[1]));
 
         String homePath = "/Users/victor/Desktop/truenodb/trueno/lib/core/binaries/elasticsearch/bin";
+        String pathData = "/Users/victor/Desktop/truenodb/trueno/lib/core/data/elasticsearch";
 
         /* instantiate the elasticsearch client */
-        final ElasticClient eClient = new ElasticClient("trueno", args[0], homePath);
+        final ElasticClient eClient = new ElasticClient("trueno", args[0], homePath, pathData);
 
         /* connect to elasticSearch server */
         eClient.connect();

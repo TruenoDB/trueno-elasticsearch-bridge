@@ -10,17 +10,11 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.elasticsearch.search.SearchHit;
-
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Map;
@@ -33,17 +27,19 @@ public class ElasticClient {
     private String pathHome;
     private String[] addresses;
     private Node node;
+    private String pathData;
 
     /**
      * Constructor
      * @param clusterName -> String
      * @param addresses -> String
      */
-    public ElasticClient(String clusterName, String addresses, String pathHome) {
+    public ElasticClient(String clusterName, String addresses, String pathHome, String pathData) {
         /* set cluster name and addresses */
         this.clusterName = clusterName;
         this.addresses = addresses.split(",");
         this.pathHome = pathHome;
+        this.pathData = pathData;
     }
 
     /**
@@ -54,9 +50,18 @@ public class ElasticClient {
         /* Instantiate service nodeClient */
         Settings.Builder b = NodeBuilder.nodeBuilder().settings();
         b.put("path.home",this.pathHome );
-        b.put("node.name","bridge" );
-        b.put("node.master","true" );
-        b.put("node.data","true" );
+        b.put("cluster.name", "trueno");
+        b.put("http.port", "8004");
+        b.put("network.host", "localhost");
+        b.put("action.auto_create_index", "false");
+        b.put("node.name", "bridge");
+        b.put("path.data", this.pathData);
+        b.put("indices.requests.cache.size", "35%");
+        b.put("indices.queries.cache.size", "30%");
+        b.put("trueno.api.port", "8012");
+        b.put("trueno.api.hostname", "localhost");
+
+
         //this.node = NodeBuilder.nodeBuilder().settings(b).client(true).local(false).clusterName(this.clusterName).node();
         this.node = NodeBuilder.nodeBuilder().settings(b).clusterName(this.clusterName).node();
         this.client = node.client();
