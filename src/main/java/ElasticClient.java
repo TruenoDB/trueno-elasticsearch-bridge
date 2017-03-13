@@ -27,19 +27,19 @@ public class ElasticClient {
     private String pathHome;
     private String[] addresses;
     private Node node;
-    private String pathData;
+    private String configPath;
 
     /**
      * Constructor
      * @param clusterName -> String
      * @param addresses -> String
      */
-    public ElasticClient(String clusterName, String addresses, String pathHome, String pathData) {
+    public ElasticClient(String clusterName, String addresses, String pathHome, String configPath) {
         /* set cluster name and addresses */
         this.clusterName = clusterName;
         this.addresses = addresses.split(",");
         this.pathHome = pathHome;
-        this.pathData = pathData;
+        this.configPath = configPath;
     }
 
     /**
@@ -50,16 +50,18 @@ public class ElasticClient {
         /* Instantiate service nodeClient */
         Settings.Builder b = NodeBuilder.nodeBuilder().settings();
         b.put("path.home",this.pathHome );
-        b.put("cluster.name", "trueno");
-        b.put("http.port", "8004");
-        b.put("network.host", "localhost");
-        b.put("action.auto_create_index", "false");
-        b.put("node.name", "bridge");
-        b.put("path.data", this.pathData);
-        b.put("indices.requests.cache.size", "35%");
-        b.put("indices.queries.cache.size", "30%");
-        b.put("trueno.api.port", "8012");
-        b.put("trueno.api.hostname", "localhost");
+        b.put("path.conf",this.configPath);
+
+//        b.put("cluster.name", "trueno");
+//        b.put("http.port", "8004");
+//        b.put("network.host", "localhost");
+//        b.put("action.auto_create_index", "false");
+//        b.put("node.name", "bridge");
+//        b.put("path.data", this.pathData);
+//        b.put("indices.requests.cache.size", "35%");
+//        b.put("indices.queries.cache.size", "30%");
+//        b.put("trueno.api.port", "8012");
+//        b.put("trueno.api.hostname", "localhost");
 
 
         //this.node = NodeBuilder.nodeBuilder().settings(b).client(true).local(false).clusterName(this.clusterName).node();

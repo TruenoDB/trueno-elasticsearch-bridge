@@ -32,7 +32,7 @@ const INTERVAL = 1;
 var queue = [];
 
 /* input for test1 */
-const input = __dirname + '/directors-5000.csv';
+const input = __dirname + '/directors-20k.csv';
 
 var hrstart = [];
 var hrend = [];

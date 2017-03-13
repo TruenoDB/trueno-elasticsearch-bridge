@@ -26,10 +26,10 @@ public class Server {
         config.setPort(Integer.parseInt(args[1]));
 
         String homePath = "/Users/victor/Desktop/truenodb/trueno/lib/core/binaries/elasticsearch/bin";
-        String pathData = "/Users/victor/Desktop/truenodb/trueno/lib/core/data/elasticsearch";
+        String configPath = "/Users/victor/Desktop/truenodb/trueno/lib/core/binaries/elasticsearch/config";
 
         /* instantiate the elasticsearch client */
-        final ElasticClient eClient = new ElasticClient("trueno", args[0], homePath, pathData);
+        final ElasticClient eClient = new ElasticClient("trueno", args[0], homePath, configPath);
 
         /* connect to elasticSearch server */
         eClient.connect();
@@ -45,15 +45,15 @@ public class Server {
                // System.out.println("request");
 
                 /* get time */
-                //long startTime = System.currentTimeMillis();
+                long startTime = System.currentTimeMillis();
 
                 /* get results */
                 Map<String,Object>[] results = eClient.search(data);
 
                 /* print time */
-                //long estimatedTime = System.currentTimeMillis() - startTime;
+                long estimatedTime = System.currentTimeMillis() - startTime;
 
-                //System.out.println("Execution time: " + estimatedTime +"ms");
+                System.out.println("Execution time: " + estimatedTime +"ms");
 
                 /* send back result */
                 ackRequest.sendAckData(results);
