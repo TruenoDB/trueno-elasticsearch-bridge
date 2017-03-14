@@ -36,10 +36,20 @@ jspm_packages
 # Optional REPL history
 .node_repl_history
 
+# Package Files
+*.jar
+*.war
+*.ear
+*.class
 
-.gitignore
-.idea/workspace.xml
+# Directories for temporal files or IDE configurations
 src/main/resources/
 target/
-.idea/libraries
-.idea/vcs.xml
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db

@@ -67,6 +67,10 @@ public class ElasticClient {
         //this.node = NodeBuilder.nodeBuilder().settings(b).client(true).local(false).clusterName(this.clusterName).node();
         this.node = NodeBuilder.nodeBuilder().settings(b).clusterName(this.clusterName).node();
         this.client = node.client();
+
+        // https://discuss.elastic.co/t/failed-to-execute-phase-query-fetch-total-failure/8546/5
+        // wait until everything is OK.
+        client.admin().cluster().prepareHealth().setWaitForGreenStatus().execute().actionGet();
     }
 
     /**
@@ -107,6 +111,7 @@ public class ElasticClient {
                 /* add map to array, note: a map is the equivalent of a JSON object */
                 //sources.add(h.getSource());
                 sources.add(ImmutableMap.of("_source", h.getSource()));
+
                 //System.out.println(h.getSource());
             }
 

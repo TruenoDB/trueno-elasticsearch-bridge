@@ -24,7 +24,7 @@ var connectionOptions =  {
     "transports" : ["websocket"]                //forces the transport to be only websocket. Server needs to be setup as well/
 }
 
-var socket = Socket('http://localhost:8012',connectionOptions);
+var socket = Socket('http://localhost:8009',connectionOptions);
 var limit = 10000000;
 var total = 0;
 var counter = 0;
@@ -32,16 +32,17 @@ const INTERVAL = 1;
 var queue = [];
 
 /* input for test1 */
-const input = __dirname + '/directors-20k.csv';
+// const input = __dirname + '/directors-20k.csv';
+const input = __dirname + '/../../../neo4j-benchmark/performance/data/films-50k.csv';
 
-var hrstart = [];
-var hrend = [];
+var hrstart;
+var hrend;
 
 function getDirector(director) {
 
-    director = "The Big Noise";
+    // director = "The Big Noise";
 
-    var q = "{\"query\":{\"bool\":{\"filter\":{\"term\":{\"prop.name\":\""+director+"\"}}}}}";
+    var q = "{\"query\":{\"bool\":{\"filter\":{\"term\":{\"prop.filmId\":\""+director+"\"}}}}}";
 
     return new Promise((resolve, reject) => {
        // if(++counter <= limit){
@@ -49,13 +50,13 @@ function getDirector(director) {
             var payload = {
                 '@class': 'SearchObject',
                 query: q,
-                index: "movies",
+                index: "films",
                 type: "v",
                 size: 1000
             };
             /* adding the payload */
             socket.emit('search', payload, function(results) {
-               // console.log(results);
+               // console.log(results, ' --> ', q);
                 var hrend = process.hrtime(hrstart);
                 //console.info("Execution time: %dms", hrend[1]/1000000);
                 total++;
@@ -69,18 +70,23 @@ function singleReads() {
 
     let directors = [];
     let promiseArray = [];
+    let column;
 
     return new Promise((resolve, reject) => {
 
         fs.createReadStream(input)
             .pipe(csv({separator: ','}))
+            .on('headers', function (headerList) {
+                column = headerList[0]
+            })
             .on('data', function(data) {
-                directors.push(data.name);
+                // console.log('-->', data[column]);
+                directors.push(data[column]);
             })
             .on('end', function() {
                 console.log('----> end');
 
-                hrstart[0] = process.hrtime();
+                hrstart = process.hrtime();
 
                 for (let k in directors) {
                     promiseArray.push(
@@ -90,8 +96,9 @@ function singleReads() {
                 }
 
                 Promise.all(promiseArray).then(() => {
-                    hrend[0] = process.hrtime(hrstart[0]);
-                    console.log('Single Reads     %ds %dms', hrend[0][0], hrend[0][1]/1000000, (total/hrend[0][0]) + " docs/s");
+                    hrend = process.hrtime(hrstart);
+                    console.log('Single Reads     %ds %dms\t', hrend[0], hrend[1]/1000000,
+                        total, "\trecords\t",(total/(hrend[0] + hrend[1]/1000000000)) + "\tdocs/s");
                     resolve();
                 });
             })
@@ -107,3 +114,4 @@ socket.on('connect', function(){
 socket.on('disconnect', function(){
     console.log('disconnected');
 });
+
