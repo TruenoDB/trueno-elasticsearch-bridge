@@ -6,6 +6,11 @@ public class SearchObject {
     private String query;
     private String index;
     private String type;
+
+    SearchObject() {
+
+    }
+
     private int size;
 
     public String getQuery() {

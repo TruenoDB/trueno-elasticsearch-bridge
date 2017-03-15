@@ -4,6 +4,7 @@
  */
 
 import com.google.common.collect.ImmutableMap;
+import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -71,6 +72,7 @@ public class ElasticClient {
         // https://discuss.elastic.co/t/failed-to-execute-phase-query-fetch-total-failure/8546/5
         // wait until everything is OK.
         client.admin().cluster().prepareHealth().setWaitForGreenStatus().execute().actionGet();
+        System.out.println("Bridge Server up!");
     }
 
     /**
@@ -79,12 +81,12 @@ public class ElasticClient {
      * @param data -> SearchObject
      * @return results -> ArrayList
      */
-    public Map<String,Object>[] search(SearchObject data) {
+    public ListenableActionFuture<SearchResponse> search(SearchObject data) {
 
         /* collecting results */
-        ArrayList<Map<String,Object>> sources = new ArrayList<>();
+//        ArrayList<Map<String,Object>> sources = new ArrayList<>();
 
-        try{
+//        try{
 
 //            System.out.println(data.getIndex());
 //            System.out.println(data.getType());
@@ -99,28 +101,29 @@ public class ElasticClient {
 
 //            System.out.println(b.toString());
 
-            SearchResponse resp = b.get();
+            //SearchResponse resp = b.get();
+            return b.execute();
 
-            SearchHit[] results = resp.getHits().getHits();
-
-            //System.out.println("Hits are " + results.length);
-
-            /* for each hit result */
-            for(SearchHit h: results){
-
-                /* add map to array, note: a map is the equivalent of a JSON object */
-                //sources.add(h.getSource());
-                sources.add(ImmutableMap.of("_source", h.getSource()));
-
-                //System.out.println(h.getSource());
-            }
-
-            return sources.toArray(new Map[sources.size()]);
-
-        }catch (Exception e){
-            System.out.println(e);
-        }
-        return new Map[0];
+//            SearchHit[] results = resp.getHits().getHits();
+//
+//            //System.out.println("Hits are " + results.length);
+//
+//            /* for each hit result */
+//            for(SearchHit h: results){
+//
+//                /* add map to array, note: a map is the equivalent of a JSON object */
+//                //sources.add(h.getSource());
+//                sources.add(ImmutableMap.of("_source", h.getSource()));
+//
+//                //System.out.println(h.getSource());
+//            }
+//
+//            return sources.toArray(new Map[sources.size()]);
+//
+//        }catch (Exception e){
+//            System.out.println(e);
+//        }
+//        return new Map[0];
     }
 
     /**
@@ -128,15 +131,15 @@ public class ElasticClient {
      * @param bulkData -> BulkObject [Index, Operations[][]]
      * @return [batch finished] -> String
      */
-    public String bulk(BulkObject bulkData) {
-        try {
+    public ListenableActionFuture<BulkResponse> bulk(BulkObject bulkData) {
+//        try {
             /* we will use this index instance on ES */
             String index = bulkData.getIndex();
 
             /* requested batch operations from client */
             String[][] operations = bulkData.getOperations();
 
-            long totalStartTime = System.currentTimeMillis();
+//            long totalStartTime = System.currentTimeMillis();
 
             BulkRequestBuilder bulkRequest = this.client.prepareBulk();
 
@@ -162,22 +165,23 @@ public class ElasticClient {
 
             }//for
 
-            BulkResponse bulkResponse = bulkRequest.get();
-
-            long totalEstimatedTime = System.currentTimeMillis() - totalStartTime;
-
-            System.out.println("batch time ms: " + totalEstimatedTime);
-
-            if (bulkResponse.hasFailures()) {
-                return bulkResponse.buildFailureMessage();
-            }
-
-            return "[]";
-        }
-        catch (Exception e) {
-            e.printStackTrace(new PrintStream(System.out));
-            return null;
-        }
+//            BulkResponse bulkResponse = bulkRequest.get();
+//
+//            long totalEstimatedTime = System.currentTimeMillis() - totalStartTime;
+//
+//            System.out.println("batch time ms: " + totalEstimatedTime);
+//
+//            if (bulkResponse.hasFailures()) {
+//                return bulkResponse.buildFailureMessage();
+//            }
+//
+//            return "[]";
+            return bulkRequest.execute();
+//        }
+//        catch (Exception e) {
+//            e.printStackTrace(new PrintStream(System.out));
+//            return null;
+//        }
     }//bulk
 
 }//class
