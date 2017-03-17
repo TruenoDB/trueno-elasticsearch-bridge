@@ -15,7 +15,7 @@
  */
 
 /* import modules */
-var ProgressBar = require('progress');
+var ProgressBar = require("progress");
 const Promise = require("bluebird");
 var Socket = require("socket.io-client");
 const fs = require("fs");
@@ -31,7 +31,7 @@ var connectionOptions =  {
 };
 
 /* socket.io */
-var socket = Socket('http://localhost:8007',connectionOptions);
+var socket = Socket('http://localhost:8010',connectionOptions);
 
 /* variables to keep track of batches and progress */
 var limit = 10000000;
@@ -148,11 +148,9 @@ function insertDeleteVertices(arr,op) {
     /* send vertices' batches to the socket server */
     _bulk().then( (result) => {
 
-        //console.log("Vertices batch created.", current / total);
         var currentTick = Math.floor(current/total*100);
         if(currentTick>previous){
             previous = currentTick;
-            //console.log(thickness);
             bar.tick();
         }
 
@@ -278,6 +276,8 @@ function _bulk() {
  * Uses vertices queue to create bulkOperations
  */
 function buildVerticesFromJSON(){
+    var count = Object.keys(vertices).length;
+    console.log(count);
     /* Initiating vertex insertion */
     insertDeleteVertices(vQueue.splice(0, batchSize),strRequest);
 }
@@ -293,6 +293,7 @@ socket.on('connect', function(){
 
 });
 
+/* on disconnection to the Server for elastic search */
 socket.on('disconnect', function(){
     console.log('disconnected');
 });
