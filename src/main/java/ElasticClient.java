@@ -77,18 +77,11 @@ public class ElasticClient {
 
         try{
 
-//            System.out.println(data.getIndex());
-//            System.out.println(data.getType());
-//            System.out.println(data.getSize());
-//            System.out.println(data.getQuery());
-
             SearchRequestBuilder b = this.client.prepareSearch(data.getIndex())
             .setTypes(data.getType())
             .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
             .setSize(data.getSize())
             .setQuery(QueryBuilders.wrapperQuery(data.getQuery()));
-
-//            System.out.println(b.toString());
 
             SearchResponse resp = b.get();
 
@@ -100,9 +93,7 @@ public class ElasticClient {
             for(SearchHit h: results){
 
                 /* add map to array, note: a map is the equivalent of a JSON object */
-                //sources.add(h.getSource());
                 sources.add(ImmutableMap.of("_source", h.getSource()));
-                //System.out.println(h.getSource());
             }
 
             return sources.toArray(new Map[sources.size()]);
