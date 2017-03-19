@@ -1,9 +1,4 @@
-/**
- * Created by Victor, Servio
- * ElasticSearch Client: includes connect(), search(), and bulk() operations
- */
 
-import com.google.common.collect.ImmutableMap;
 import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -15,32 +10,46 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
-import org.elasticsearch.search.SearchHit;
-import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+/**
+ * @author victor
+ * @author servio
+ * @author ebarsallo
+ *
+ * Elasticsearch client.
+ * Includes the following operations:
+ * <ul>
+ *     <li>Search</li>
+ *     <li>Bulk insert/delete</li>
+ * </ul>
+ */
 public class ElasticClient {
+
+    public static final Logger logger = LoggerFactory.getLogger(ElasticClient.class);
 
     /* Private properties */
     private Client client;
     private String clusterName;
     private String pathHome;
+    private String pathConf;
     private String[] addresses;
     private Node node;
-    private String configPath;
 
     /**
      * Constructor
      * @param clusterName -> String
      * @param addresses -> String
      */
-    public ElasticClient(String clusterName, String addresses, String pathHome, String configPath) {
+    public ElasticClient(String clusterName, String addresses, String pathHome, String pathConf) {
         /* set cluster name and addresses */
         this.clusterName = clusterName;
         this.addresses = addresses.split(",");
         this.pathHome = pathHome;
-        this.configPath = configPath;
+        this.pathConf = pathConf;
     }
 
     /**
@@ -48,31 +57,29 @@ public class ElasticClient {
      */
     public void connect() {
 
-        /* Instantiate service nodeClient */
-        Settings.Builder b = NodeBuilder.nodeBuilder().settings();
-        b.put("path.home",this.pathHome );
-        b.put("path.conf",this.configPath);
+        /* Instantiate service node client */
+        Settings.Builder settings = NodeBuilder.nodeBuilder().settings();
+        settings.put("path.home", this.pathHome );
+        settings.put("path.conf", this.pathConf);
+        settings.put("node.name", "localhost");
 
-//        b.put("cluster.name", "trueno");
-//        b.put("http.port", "8004");
-//        b.put("network.host", "localhost");
-//        b.put("action.auto_create_index", "false");
-//        b.put("node.name", "bridge");
-//        b.put("path.data", this.pathData);
-//        b.put("indices.requests.cache.size", "35%");
-//        b.put("indices.queries.cache.size", "30%");
-//        b.put("trueno.api.port", "8012");
-//        b.put("trueno.api.hostname", "localhost");
+        /* Build node client */
+        this.node = NodeBuilder.nodeBuilder()
+                .settings(settings)
+                .clusterName(this.clusterName)
+                .node();
 
-
-        //this.node = NodeBuilder.nodeBuilder().settings(b).client(true).local(false).clusterName(this.clusterName).node();
-        this.node = NodeBuilder.nodeBuilder().settings(b).clusterName(this.clusterName).node();
+        /* Instantiate client */
         this.client = node.client();
 
-        // https://discuss.elastic.co/t/failed-to-execute-phase-query-fetch-total-failure/8546/5
-        // wait until everything is OK.
-        client.admin().cluster().prepareHealth().setWaitForGreenStatus().execute().actionGet();
-        System.out.println("Bridge Server up!");
+        /* Wait until everything is OK. */
+        client.admin()
+            .cluster()
+            .prepareHealth()
+            .setWaitForGreenStatus()
+            .execute().actionGet();
+
+        logger.info("Trueno Bridge server is up");
     }
 
     /**
@@ -83,47 +90,15 @@ public class ElasticClient {
      */
     public ListenableActionFuture<SearchResponse> search(SearchObject data) {
 
-        /* collecting results */
-//        ArrayList<Map<String,Object>> sources = new ArrayList<>();
-
-//        try{
-
-//            System.out.println(data.getIndex());
-//            System.out.println(data.getType());
-//            System.out.println(data.getSize());
-//            System.out.println(data.getQuery());
-
-            SearchRequestBuilder b = this.client.prepareSearch(data.getIndex())
+        SearchRequestBuilder builder = this.client
+            .prepareSearch(data.getIndex())
             .setTypes(data.getType())
             .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
             .setSize(data.getSize())
             .setQuery(QueryBuilders.wrapperQuery(data.getQuery()));
 
-//            System.out.println(b.toString());
+            return builder.execute();
 
-            //SearchResponse resp = b.get();
-            return b.execute();
-
-//            SearchHit[] results = resp.getHits().getHits();
-//
-//            //System.out.println("Hits are " + results.length);
-//
-//            /* for each hit result */
-//            for(SearchHit h: results){
-//
-//                /* add map to array, note: a map is the equivalent of a JSON object */
-//                //sources.add(h.getSource());
-//                sources.add(ImmutableMap.of("_source", h.getSource()));
-//
-//                //System.out.println(h.getSource());
-//            }
-//
-//            return sources.toArray(new Map[sources.size()]);
-//
-//        }catch (Exception e){
-//            System.out.println(e);
-//        }
-//        return new Map[0];
     }
 
     /**
@@ -132,57 +107,37 @@ public class ElasticClient {
      * @return [batch finished] -> String
      */
     public ListenableActionFuture<BulkResponse> bulk(BulkObject bulkData) {
-//        try {
+
             /* we will use this index instance on ES */
             String index = bulkData.getIndex();
 
-            /* requested batch operations from client */
             String[][] operations = bulkData.getOperations();
-
-//            long totalStartTime = System.currentTimeMillis();
-
             BulkRequestBuilder bulkRequest = this.client.prepareBulk();
 
             for (String[] info : operations) {
 
                 if (info[0].equals("index")) {
                     /*
-                    info[0] = index or delete
-                    info[1] = type {v, e}
-                    info[2] = id
-                    info[3] = '{name:pedro,age:15}'
+                     * Example:
+                     * info[0] = index or delete
+                     * info[1] = type {v, e}
+                     * info[2] = id
+                     * info[3] = '{name:pedro,age:15}'
                      */
+
                     /* adding document to the batch */
                     bulkRequest.add(this.client.prepareIndex(index, info[1], info[2]).setSource(info[3]));
-
                     continue;
-                }//if
+                }
 
                 if (!info[0].equals("delete")) continue;
 
                 /* adding document to the batch */
                 bulkRequest.add(this.client.prepareDelete(index, info[1], info[2]));
 
-            }//for
+            }
 
-//            BulkResponse bulkResponse = bulkRequest.get();
-//
-//            long totalEstimatedTime = System.currentTimeMillis() - totalStartTime;
-//
-//            System.out.println("batch time ms: " + totalEstimatedTime);
-//
-//            if (bulkResponse.hasFailures()) {
-//                return bulkResponse.buildFailureMessage();
-//            }
-//
-//            return "[]";
             return bulkRequest.execute();
-//        }
-//        catch (Exception e) {
-//            e.printStackTrace(new PrintStream(System.out));
-//            return null;
-//        }
-    }//bulk
+    }
 
-}//class
-
+}

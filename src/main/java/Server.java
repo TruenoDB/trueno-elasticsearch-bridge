@@ -2,79 +2,102 @@
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
+
+import org.apache.commons.configuration2.PropertiesConfiguration;
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
+import org.apache.commons.configuration2.builder.fluent.Parameters;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
+
 import org.java_websocket.WebSocket;
-import org.java_websocket.WebSocketImpl;
 import org.java_websocket.drafts.Draft;
-import org.java_websocket.drafts.Draft_17;
-import org.java_websocket.framing.FrameBuilder;
-import org.java_websocket.framing.Framedata;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
-import org.json.JSONException;
-import org.json.JSONObject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Created by victor on 2/24/17.
+ * Created on 2/24/17.
+ * @author victor
+ *
  */
 public class Server extends WebSocketServer {
 
-    /* ElasticSearch Client */
+    public static final Logger logger = LoggerFactory.getLogger(Server.class);
+
+    /* Elasticsearch Client */
     private final ElasticClient client;
 
-    static final String PATH_HOME = "~/Code/purdue.edu/699-research/truenodb/trueno/lib/core/binaries/elasticsearch/bin";
-    static final String PATH_CONFIG = "~/Code/purdue.edu/699-research/truenodb/trueno/lib/core/binaries/elasticsearch/config";
-
-    static final String ACTION_SEARCH = "search";
-    static final String ACTION_BULK   = "bulk";
+    /* Allowed actions/methods */
+    static final String ACTION_SEARCH = "SEARCH";
+    static final String ACTION_BULK   = "BULK";
+    static final String ACTION_CREATE_GRAPH   = "CREATE";
+    static final String ACTION_DROP_GRAPH     = "DROP";
 
     /* Stats */
-    long totalTime1 = 0;
-    long totalTime2 = 0;
-    long totalReq = 0;
+    static final long TOTAL_REQUEST_REPORT = 5000;
+    long totalTime = 0;
+    long totalRequest = 0;
 
     /**
      * Construct a {@link Server} instance.
-     * @param hostname
-     * @param port
+     * @param config
      * @param draft
      * @throws UnknownHostException
      */
-    public Server(String hostname, int port, Draft draft) throws UnknownHostException {
-        super(new InetSocketAddress(port));
+    public Server(PropertiesConfiguration config, Draft draft) throws UnknownHostException {
+        super(new InetSocketAddress(config.getInt("elasticsearch.cluster.port")));
 
-        System.out.println( "Starting Server on " + port );
+        logger.info("Starting ES server on {} ", config.getInt("elasticsearch.cluster.port"));
+
+        String name = config.getString("elasticsearch.cluster.name");
+        String home = config.getString("elasticsearch.path.home");
+        String conf = config.getString("elasticsearch.path.config");
 
         /* Instantiate the ElasticSearch client and connect to Server */
-        this.client = new ElasticClient("trueno", hostname, PATH_HOME, PATH_CONFIG);
+        this.client = new ElasticClient("trueno", name, home, conf);
         this.client.connect();
     }
 
+    /**
+     *
+     * @param conn
+     * @param handshake
+     */
     @Override
-    public void onOpen(WebSocket webSocket, ClientHandshake clientHandshake) {
+    public void onOpen(WebSocket conn, ClientHandshake handshake) {
         System.out.println( "Connection Opened" );
     }
 
+    /**
+     *
+     * @param conn
+     * @param code
+     * @param reason
+     * @param remote
+     */
     @Override
-    public void onClose(WebSocket webSocket, int i, String s, boolean b) {
+    public void onClose(WebSocket conn, int code, String reason, boolean remote) {
         System.out.println( "closed" );
     }
 
+    /**
+     *
+     * @param conn
+     * @param message
+     */
     @Override
-    public void onMessage(WebSocket conn, String s) {
-//        System.out.println( "Message from client:" + s );
+    public void onMessage(WebSocket conn, String message) {
 
-        Message msg = new Gson().fromJson(s, Message.class);
+        Message msg = new Gson().fromJson(message, Message.class);
 
         // FIXME. Change to something more sophisticated and efficient
         // FIXME. When the load is too high, there are chance that the connection collapse.
@@ -109,21 +132,24 @@ public class Server extends WebSocketServer {
         //at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
         //at java.lang.Thread.run(Thread.java:745)
 
-        switch (msg.getAction()) {
+        if (msg.getAction().equalsIgnoreCase(ACTION_SEARCH)) {
+
+        } else if (msg.getAction().equalsIgnoreCase(ACTION_BULK)) {
+
+        } else if (msg.getAction().equalsIgnoreCase(ACTION_CREATE_GRAPH)) {
+
+        } else if (msg.getAction().equalsIgnoreCase(ACTION_DROP_GRAPH)) {
+
+        }
+
+        switch (msg.getAction().toUpperCase()) {
             case ACTION_SEARCH: {
-                /* Start time */
-                long startTime2 = System.nanoTime();
-
-                //System.out.println( "[search] ... Message from client:" + msg.getObject() );
-                SearchObject obj = new Gson().fromJson(msg.getObject(), SearchObject.class);
-
                 /* Start time */
                 long startTime = System.nanoTime();
 
-                /* Get results */
-                //Map<String,Object>[] results = client.search(obj);
-                //Map<String,Object>[] results = new Map[0];
+                SearchObject obj = new Gson().fromJson(msg.getObject(), SearchObject.class);
 
+                /* Get results */
                 client.search(obj).addListener(new ActionListener<SearchResponse>() {
                     @Override
                     public void onResponse(SearchResponse resp) {
@@ -133,38 +159,27 @@ public class Server extends WebSocketServer {
 
                         SearchHit[] results = resp.getHits().getHits();
 
-                        //System.out.println("Hits are " + results.length);
-
                         /* for each hit result */
                         for(SearchHit h: results){
-
                             /* add map to array, note: a map is the equivalent of a JSON object */
-                            //sources.add(h.getSource());
                             sources.add(ImmutableMap.of("_source", h.getSource()));
-
-                            //System.out.println(h.getSource());
                         }
-
-                        /* End time */
-                        long estimatedTime = System.nanoTime() - startTime;
 
                         Response response = new Response();
                         response.setCallbackIndex(msg.getCallbackIndex());
                         response.setObject(sources.toArray(new Map[sources.size()]));
 
-                /* End time */
-                        long estimatedTime2 = System.nanoTime() - startTime2;
+                        /* End time */
+                        long estimatedTime = System.nanoTime() - startTime;
 
-                /* Compute stats */
-                        totalTime1 += estimatedTime;
-                        totalTime2 += estimatedTime2;
-                        totalReq++;
+                        /* Compute stats */
+                        totalTime += estimatedTime;
+                        totalRequest++;
 
-                        if (totalReq % 5000 == 0) {
-                            System.out.println("Average execution time "
-                                    + (totalTime1 * 0.000001) / totalReq + " ms "
-                                    + (totalTime2 * 0.000001) / totalReq + " ms ");
-                            totalReq = 0; totalTime1 = 0; totalTime2 = 0;
+                        if (totalRequest % TOTAL_REQUEST_REPORT == 0) {
+                            logger.info("SEARCH - Average execution time: {} ms",
+                                    (totalTime * 0.000001) / totalRequest );
+                            totalRequest = 0; totalTime = 0;
                         }
 
                         conn.send( new Gson().toJson(response) );
@@ -174,9 +189,8 @@ public class Server extends WebSocketServer {
                     @Override
                     public void onFailure(Throwable throwable) {
 
-                        System.out.println("Failed on search.\n"
-                                + msg.getObject()
-                                + "\n" + throwable);
+                        logger.info("SEARCH - error: {}", msg.getObject());
+                        logger.error("{}", throwable);
 
                         Response response = new Response();
                         response.setCallbackIndex(msg.getCallbackIndex());
@@ -191,7 +205,6 @@ public class Server extends WebSocketServer {
             }
 
             case ACTION_BULK: {
-                //System.out.println( "[bulk] ..... Message from client:" + msg.getObject() );
                 BulkObject obj = new Gson().fromJson(msg.getObject(), BulkObject.class);
 
                 /* Start time */
@@ -206,10 +219,12 @@ public class Server extends WebSocketServer {
                         /* End time */
                         long estimatedTime = System.nanoTime() - startTime;
 
-                        System.out.println("batch time ms: " + estimatedTime * 0.000001 + " " + bulkItemResponses.getItems().length);
+                        logger.info("BULK - batch time: {} {} ms",
+                                estimatedTime * 0.000001,
+                                bulkItemResponses.getItems().length);
 
                         if (bulkItemResponses.hasFailures()) {
-                            System.out.println("failures --> " + bulkItemResponses.buildFailureMessage());
+                            logger.error("{}", bulkItemResponses.buildFailureMessage());
                         }
 
                         Response response = new Response();
@@ -221,9 +236,8 @@ public class Server extends WebSocketServer {
 
                     @Override
                     public void onFailure(Throwable throwable) {
-                        System.out.println("Failed on search.\n"
-                                + msg.getCallbackIndex()
-                                + "\n" + throwable);
+                        logger.info("BULK - error: {}", msg.getObject());
+                        logger.error("{}", throwable);
 
                         Response response = new Response();
                         response.setCallbackIndex(msg.getCallbackIndex());
@@ -237,105 +251,44 @@ public class Server extends WebSocketServer {
             }
 
         }
-
-//        try {
-//            JSONObject msg = new JSONObject(s);
-//            System.out.println( "Message from client:" + msg );
-//        } catch (JSONException e) {
-//            e.printStackTrace();
-//        }
-        /* this is a ECHO */
-//        conn.send( s );
     }
 
+    /**
+     *
+     * @param webSocket
+     * @param exception
+     */
     @Override
-    public void onError(WebSocket webSocket, Exception e) {
+    public void onError(WebSocket webSocket, Exception exception) {
         System.out.println( "Error:" );
-        e.printStackTrace();
+        exception.printStackTrace();
     }
-
-
-//    Server (String hostname, int port) {
-//
-//        /* Instantiate the server */
-//        this.server = new SocketIOServer(config);
-//
-//        /* Set event listeners */
-//        /* Search */
-//        server.addEventListener("search", SearchObject.class, new DataListener<SearchObject>() {
-//
-//            @Override
-//            public void onData(SocketIOClient client, SearchObject data, AckRequest ackRequest) {
-//                //System.out.println(data);
-//                // System.out.println("request");
-//
-//                /* get time */
-//                long startTime = System.nanoTime();
-//
-//                /* get results */
-//                Map<String,Object>[] results = eClient.search(data);
-//
-//                /* print time */
-//                long estimatedTime = System.nanoTime() - startTime;
-//
-//                totalTime += estimatedTime;
-//                totalReq++;
-//
-//                if (totalReq % 5000 == 0) {
-//                    System.out.println("Average execution time " + (totalTime * 0.000001) / totalReq + " ms ");
-//                    totalReq = 0; totalTime = 0;
-//                }
-//                //System.out.println("Execution time: " + estimatedTime +"ns");
-//
-//                /* send back result */
-//                ackRequest.sendAckData(results);
-//            }
-//        });
-//
-//        /* Bulk Operations */
-//        server.addEventListener("bulk", BulkObject.class, new DataListener<BulkObject>() {
-//            @Override
-//            public void onData(SocketIOClient client, BulkObject data, AckRequest ackRequest) {
-//
-//                /* get results */
-//                String result = eClient.bulk(data);
-//
-//                /* sending Acknowledge to socket client */
-//                ackRequest.sendAckData(result);
-//            }
-//        });
-//
-//
-//        /* Starting Socket Server */
-//        server.startAsync().addListener(new FutureListener<Void>() {
-//            @Override
-//            public void operationComplete(Future<Void> future) throws Exception {
-//                if (future.isSuccess()) {
-//                    System.out.println("Bridge Server Started");
-//                } else {
-//                    System.out.println("Bridge Server Failure");
-//                }
-//            }
-//        });
-//
-//    }
 
 
     /* Main */
     public static void main(String args[]) throws UnknownHostException {
 
-        String host;
-        int port;
+        /* Load configuration */
+        FileBasedConfigurationBuilder<PropertiesConfiguration> builder =
+            new FileBasedConfigurationBuilder<PropertiesConfiguration>(PropertiesConfiguration.class)
+            .configure(new Parameters().properties()
+            .setFileName("trueno.config")
+            .setThrowExceptionOnMissing(true));
 
-        if (args.length < 2) {
-            System.out.println("Usage: Server hostname port");
-            System.exit(1);
+        try {
+            PropertiesConfiguration configuration = builder.getConfiguration();
+
+            logger.info("cluster     [{}]", configuration.getString("elasticsearch.cluster.name"));
+            logger.info("port        [{}]", configuration.getInt("elasticsearch.cluster.port"));
+            logger.info("path home   [{}]", configuration.getString("elasticsearch.path.home"));
+            logger.info("path config [{}]", configuration.getString("elasticsearch.path.config"));
+
+            Server myserver = new Server(configuration, null);
+            myserver.start();
+        } catch (ConfigurationException e) {
+            e.printStackTrace();
         }
 
-        host = args[0];
-        port = Integer.parseInt(args[1]);
-
-        new Server(host, port, null).start();
     }
 
 }
