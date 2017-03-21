@@ -1,3 +1,5 @@
+package org.trueno.es.bridge.action;
+
 /**
  * Created by victor on 2/24/17.
  */
@@ -7,7 +9,7 @@ public class SearchObject {
     private String index;
     private String type;
 
-    SearchObject() {
+    public SearchObject() {
 
     }
 

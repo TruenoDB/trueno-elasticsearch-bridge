@@ -97,7 +97,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>Server</mainClass>
+                            <mainClass>org.trueno.es.bridge.Server</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

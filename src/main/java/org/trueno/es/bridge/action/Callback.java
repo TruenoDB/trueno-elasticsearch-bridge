@@ -1,4 +1,4 @@
-
+package org.trueno.es.bridge.action;
 
 /**
  * Created by maverick on 2/18/17.

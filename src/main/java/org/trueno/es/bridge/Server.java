@@ -1,4 +1,14 @@
+package org.trueno.es.bridge;
 
+import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
+import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
+import org.trueno.es.bridge.action.IndexObject;
+import org.trueno.es.bridge.comm.Message;
+import org.trueno.es.bridge.comm.Response;
+import org.trueno.es.bridge.action.BulkObject;
+import org.trueno.es.bridge.action.SearchObject;
+
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -39,8 +49,8 @@ public class Server extends WebSocketServer {
     /* Allowed actions/methods */
     static final String ACTION_SEARCH = "SEARCH";
     static final String ACTION_BULK   = "BULK";
-    static final String ACTION_CREATE_GRAPH   = "CREATE";
-    static final String ACTION_DROP_GRAPH     = "DROP";
+    static final String ACTION_CREATE_GRAPH  = "CREATE";
+    static final String ACTION_DROP_GRAPH    = "DROP";
 
     /* Stats */
     static final long TOTAL_REQUEST_REPORT = 5000;
@@ -62,7 +72,7 @@ public class Server extends WebSocketServer {
         String home = config.getString("elasticsearch.path.home");
         String conf = config.getString("elasticsearch.path.config");
 
-        /* Instantiate the ElasticSearch client and connect to Server */
+        /* Instantiate the ElasticSearch client and connect to org.trueno.es.bridge.Server */
         this.client = new ElasticClient("trueno", name, home, conf);
         this.client.connect();
     }
@@ -100,49 +110,57 @@ public class Server extends WebSocketServer {
         Message msg = new Gson().fromJson(message, Message.class);
 
         // FIXME. Change to something more sophisticated and efficient
-        // FIXME. When the load is too high, there are chance that the connection collapse.
-        // The following error was reported while running two test-readers (50K each) at the same time
-        //{"query":"{\"query\":{\"bool\":{\"filter\":{\"term\":{\"prop.filmId\":\"m.02r1vk7\"}}}}}","index":"films","type":"v","size":1000}
-        //org.java_websocket.exceptions.WebsocketNotConnectedException
-        //Exception in thread "elasticsearch[Bella Donna][listener][T#932]" org.java_websocket.exceptions.WebsocketNotConnectedException
-        //at org.java_websocket.WebSocketImpl.send(WebSocketImpl.java:566)
-        //at org.java_websocket.WebSocketImpl.send(WebSocketImpl.java:543)
-        //at Server$1.onFailure(Server.java:152)
-        //at org.elasticsearch.action.support.ThreadedActionListener$1.onFailure(ThreadedActionListener.java:94)
-        //at org.elasticsearch.common.util.concurrent.AbstractRunnable.run(AbstractRunnable.java:39)
-        //at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
-        //at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
-        //at java.lang.Thread.run(Thread.java:745)
-        //Exception in thread "elasticsearch[Bella Donna][listener][T#931]" org.java_websocket.exceptions.WebsocketNotConnectedException
-        //at org.java_websocket.WebSocketImpl.send(WebSocketImpl.java:566)
-        //at org.java_websocket.WebSocketImpl.send(WebSocketImpl.java:543)
-        //at Server$1.onFailure(Server.java:152)
-        //at org.elasticsearch.action.support.ThreadedActionListener$1.onFailure(ThreadedActionListener.java:94)
-        //at org.elasticsearch.common.util.concurrent.AbstractRunnable.run(AbstractRunnable.java:39)
-        //at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
-        //at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
-        //at java.lang.Thread.run(Thread.java:745)
-        //Exception in thread "elasticsearch[Bella Donna][listener][T#933]" org.java_websocket.exceptions.WebsocketNotConnectedException
-        //at org.java_websocket.WebSocketImpl.send(WebSocketImpl.java:566)
-        //at org.java_websocket.WebSocketImpl.send(WebSocketImpl.java:543)
-        //at Server$1.onFailure(Server.java:152)
-        //at org.elasticsearch.action.support.ThreadedActionListener$1.onFailure(ThreadedActionListener.java:94)
-        //at org.elasticsearch.common.util.concurrent.AbstractRunnable.run(AbstractRunnable.java:39)
-        //at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
-        //at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
-        //at java.lang.Thread.run(Thread.java:745)
-
-        if (msg.getAction().equalsIgnoreCase(ACTION_SEARCH)) {
-
-        } else if (msg.getAction().equalsIgnoreCase(ACTION_BULK)) {
-
-        } else if (msg.getAction().equalsIgnoreCase(ACTION_CREATE_GRAPH)) {
-
-        } else if (msg.getAction().equalsIgnoreCase(ACTION_DROP_GRAPH)) {
-
-        }
+//        if (msg.getAction().equalsIgnoreCase(ACTION_SEARCH)) {
+//
+//        } else if (msg.getAction().equalsIgnoreCase(ACTION_BULK)) {
+//
+//        } else if (msg.getAction().equalsIgnoreCase(ACTION_CREATE_GRAPH)) {
+//
+//        } else if (msg.getAction().equalsIgnoreCase(ACTION_DROP_GRAPH)) {
+//
+//        }
 
         switch (msg.getAction().toUpperCase()) {
+
+            case ACTION_CREATE_GRAPH: {
+
+                IndexObject obj = new Gson().fromJson(msg.getObject(), IndexObject.class);
+
+                try {
+                    client.create(obj).addListener(new ActionListener<CreateIndexResponse>() {
+                        @Override
+                        public void onResponse(CreateIndexResponse createIndexResponse) {
+
+                            logger.info("CREATE - {} done.", obj.getIndex());
+
+                        }
+
+                        @Override
+                        public void onFailure(Throwable throwable) {
+
+                            logger.info("CREATE - error: {}", msg.getObject());
+                            logger.error("{}", throwable);
+
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                Response response = new Response();
+                response.setCallbackIndex(msg.getCallbackIndex());
+                response.setObject(new Map[0]);
+
+                conn.send( new Gson().toJson(response) );
+
+                break;
+            }
+
+            case ACTION_DROP_GRAPH: {
+
+                break;
+            }
+
             case ACTION_SEARCH: {
                 /* Start time */
                 long startTime = System.nanoTime();
@@ -273,6 +291,7 @@ public class Server extends WebSocketServer {
             new FileBasedConfigurationBuilder<PropertiesConfiguration>(PropertiesConfiguration.class)
             .configure(new Parameters().properties()
             .setFileName("trueno.config")
+            .setListDelimiterHandler(new DefaultListDelimiterHandler(','))
             .setThrowExceptionOnMissing(true));
 
         try {

@@ -1,15 +1,18 @@
+package org.trueno.es.bridge.comm;
+
 import com.google.gson.JsonObject;
+
+import java.util.Map;
 
 /**
  * Created by ebarsallo on 3/14/17.
  */
-public class Message {
+public class Response {
 
     private String callbackIndex;
-    private String action;
-    private JsonObject object;
+    private Map<String,Object>[] object;
 
-    Message() {
+    public Response() {
 
     }
 
@@ -21,19 +24,11 @@ public class Message {
         this.callbackIndex = callbackIndex;
     }
 
-    public String getAction() {
-        return action;
-    }
-
-    public void setAction(String action) {
-        this.action = action;
-    }
-
-    public JsonObject getObject() {
+    public Map<String, Object>[] getObject() {
         return object;
     }
 
-    public void setObject(JsonObject object) {
+    public void setObject(Map<String, Object>[] object) {
         this.object = object;
     }
 }
