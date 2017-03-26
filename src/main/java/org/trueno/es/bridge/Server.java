@@ -2,6 +2,7 @@ package org.trueno.es.bridge;
 
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.trueno.es.bridge.action.IndexObject;
 import org.trueno.es.bridge.comm.Message;
 import org.trueno.es.bridge.comm.Response;
@@ -109,7 +110,10 @@ public class Server extends WebSocketServer {
 
         Message msg = new Gson().fromJson(message, Message.class);
 
-        // FIXME. Change to something more sophisticated and efficient
+        // TODO. Define a basic structure/contract for handling the message.
+        // For instance, define an abstract class/interface. Basic events can be defined as function (which has
+        // to been override). The treatment for error is similar for all cases.
+
 //        if (msg.getAction().equalsIgnoreCase(ACTION_SEARCH)) {
 //
 //        } else if (msg.getAction().equalsIgnoreCase(ACTION_BULK)) {
@@ -158,6 +162,27 @@ public class Server extends WebSocketServer {
 
             case ACTION_DROP_GRAPH: {
 
+                IndexObject obj = new Gson().fromJson(msg.getObject(), IndexObject.class);
+
+                client.drop(obj).addListener(new ActionListener<DeleteIndexResponse>() {
+                    @Override
+                    public void onResponse(DeleteIndexResponse deleteIndexResponse) {
+                        logger.info("DROP - {} done.", obj.getIndex());
+                    }
+
+                    @Override
+                    public void onFailure(Throwable throwable) {
+                        logger.info("DROP - error: {}", msg.getObject());
+                        logger.error("{}", throwable);
+                    }
+                });
+
+                // FIXME Define a functino to send response
+                Response response = new Response();
+                response.setCallbackIndex(msg.getCallbackIndex());
+                response.setObject(new Map[0]);
+
+                conn.send( new Gson().toJson(response) );
                 break;
             }
 

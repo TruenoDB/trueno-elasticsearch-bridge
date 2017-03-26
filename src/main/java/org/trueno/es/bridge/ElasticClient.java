@@ -139,6 +139,12 @@ public class ElasticClient {
         logger.info("Trueno Bridge server is up");
     }
 
+    /**
+     *
+     * @param data
+     * @return
+     * @throws Exception
+     */
     public ListenableActionFuture<CreateIndexResponse> create(IndexObject data) throws Exception {
 
         try {
@@ -170,15 +176,21 @@ public class ElasticClient {
                     .addMapping("g", mappingG)
                     .execute();
         } catch (Exception ex) {
+            // FIXME. Use a custom Exception class
             logger.error("{}", ex);
             throw ex;
         }
 
     }
 
-    public ListenableActionFuture<DeleteIndexResponse> drop() {
+    /**
+     *
+     * @param data
+     * @return
+     */
+    public ListenableActionFuture<DeleteIndexResponse> drop(IndexObject data) {
 
-        return this.client.admin().indices().prepareDelete()
+        return this.client.admin().indices().prepareDelete(data.getIndex())
                 .execute();
     }
 
