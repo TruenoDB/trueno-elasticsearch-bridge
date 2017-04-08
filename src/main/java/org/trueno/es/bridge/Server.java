@@ -3,6 +3,8 @@ package org.trueno.es.bridge;
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
+import org.elasticsearch.action.index.IndexResponse;
+import org.trueno.es.bridge.action.DocumentObject;
 import org.trueno.es.bridge.action.IndexObject;
 import org.trueno.es.bridge.comm.Message;
 import org.trueno.es.bridge.comm.Response;
@@ -48,8 +50,9 @@ public class Server extends WebSocketServer {
     private final ElasticClient client;
 
     /* Allowed actions/methods */
-    static final String ACTION_SEARCH = "SEARCH";
-    static final String ACTION_BULK   = "BULK";
+    static final String ACTION_SEARCH  = "SEARCH";
+    static final String ACTION_BULK    = "BULK";
+    static final String ACTION_PERSIST = "PERSIST";
     static final String ACTION_CREATE_GRAPH  = "CREATE";
     static final String ACTION_DROP_GRAPH    = "DROP";
 
@@ -183,6 +186,40 @@ public class Server extends WebSocketServer {
                 response.setObject(new Map[0]);
 
                 conn.send( new Gson().toJson(response) );
+                break;
+            }
+
+            case ACTION_PERSIST: {
+
+                DocumentObject obj = new Gson().fromJson(msg.getObject(), DocumentObject.class);
+
+                try {
+                    client.persist(obj).addListener(new ActionListener<IndexResponse>() {
+                        @Override
+                        public void onResponse(IndexResponse response) {
+
+                            logger.info("PERSIST - {} done.", obj.getIndex());
+
+                        }
+
+                        @Override
+                        public void onFailure(Throwable throwable) {
+
+                            logger.info("PERSIST - error: {}", msg.getObject());
+                            logger.error("{}", throwable);
+
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                Response response = new Response();
+                response.setCallbackIndex(msg.getCallbackIndex());
+                response.setObject(new Map[0]);
+
+                conn.send( new Gson().toJson(response) );
+
                 break;
             }
 

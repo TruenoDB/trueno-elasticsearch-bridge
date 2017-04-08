@@ -7,6 +7,7 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
 import org.elasticsearch.action.index.IndexAction;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.transport.TransportClient;
@@ -18,6 +19,7 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.engine.Engine;
 import org.trueno.es.bridge.action.BulkObject;
+import org.trueno.es.bridge.action.DocumentObject;
 import org.trueno.es.bridge.action.IndexObject;
 import org.trueno.es.bridge.action.SearchObject;
 
@@ -191,6 +193,18 @@ public class ElasticClient {
     public ListenableActionFuture<DeleteIndexResponse> drop(IndexObject data) {
 
         return this.client.admin().indices().prepareDelete(data.getIndex())
+                .execute();
+    }
+
+    /**
+     *
+     * @param data
+     * @return
+     */
+    public ListenableActionFuture<IndexResponse> persist(DocumentObject data) {
+
+        return this.client.prepareIndex(data.getIndex(), data.getType(), data.getId())
+                .setSource(data.getSource())
                 .execute();
     }
 

@@ -18,16 +18,6 @@
             <version>2.8.0</version>
         </dependency>
         <dependency>
-            <groupId>org.jdeferred</groupId>
-            <artifactId>jdeferred-core</artifactId>
-            <version>1.2.4</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.nkzawa</groupId>
-            <artifactId>socket.io-client</artifactId>
-            <version>0.6.0</version>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>1.7.7</version>
