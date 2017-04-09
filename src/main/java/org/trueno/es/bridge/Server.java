@@ -54,6 +54,7 @@ public class Server extends WebSocketServer {
     static final String ACTION_BULK    = "BULK";
     static final String ACTION_PERSIST = "PERSIST";
     static final String ACTION_CREATE_GRAPH  = "CREATE";
+    static final String ACTION_OPEN_GRAPH    = "OPEN";
     static final String ACTION_DROP_GRAPH    = "DROP";
 
     /* Stats */
