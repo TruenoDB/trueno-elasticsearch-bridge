@@ -89,7 +89,7 @@ public class Server extends WebSocketServer {
      */
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
-        System.out.println( "Connection Opened" );
+//        System.out.println( "Connection Opened" );
     }
 
     /**
@@ -101,7 +101,7 @@ public class Server extends WebSocketServer {
      */
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        System.out.println( "closed" );
+//        System.out.println( "closed" );
     }
 
     /**
@@ -199,7 +199,12 @@ public class Server extends WebSocketServer {
                         @Override
                         public void onResponse(IndexResponse response) {
 
-                            logger.info("PERSIST - {} done.", obj.getIndex());
+                            //logger.info("PERSIST - {}.", obj.getIndex());
+                            Response resp = new Response();
+                            resp.setCallbackIndex(msg.getCallbackIndex());
+                            resp.setObject(new Map[0]);
+
+                            conn.send( new Gson().toJson(resp) );
 
                         }
 
@@ -209,17 +214,17 @@ public class Server extends WebSocketServer {
                             logger.info("PERSIST - error: {}", msg.getObject());
                             logger.error("{}", throwable);
 
+                            Response response = new Response();
+                            response.setCallbackIndex(msg.getCallbackIndex());
+                            response.setObject(new Map[0]);
+
+                            conn.send( new Gson().toJson(response) );
+
                         }
                     });
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-
-                Response response = new Response();
-                response.setCallbackIndex(msg.getCallbackIndex());
-                response.setObject(new Map[0]);
-
-                conn.send( new Gson().toJson(response) );
 
                 break;
             }
@@ -341,6 +346,7 @@ public class Server extends WebSocketServer {
      */
     @Override
     public void onError(WebSocket webSocket, Exception exception) {
+        logger.error(exception.getMessage());
         System.out.println( "Error:" );
         exception.printStackTrace();
     }
