@@ -38,8 +38,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Created on 2/24/17.
+ *
  * @author victor
+ * @author ebarsallo
  *
  */
 public class Server extends WebSocketServer {
@@ -48,6 +49,12 @@ public class Server extends WebSocketServer {
 
     /* Elasticsearch Client */
     private final ElasticClient client;
+
+    /* Configuration keys */
+    static final String CONFIG_CLUSTER_NAME = "elasticsearch.cluster.name";
+    static final String CONFIG_CLUSTER_PORT = "elasticsearch.cluster.port";
+    static final String CONFIG_PATH_HOME    = "elasticsearch.path.home";
+    static final String CONFIG_PATH_CFG     = "elasticsearch.path.config";
 
     /* Allowed actions/methods */
     static final String ACTION_SEARCH  = "SEARCH";
@@ -355,27 +362,46 @@ public class Server extends WebSocketServer {
     /* Main */
     public static void main(String args[]) throws UnknownHostException {
 
-        /* Load configuration */
-        FileBasedConfigurationBuilder<PropertiesConfiguration> builder =
-            new FileBasedConfigurationBuilder<PropertiesConfiguration>(PropertiesConfiguration.class)
-            .configure(new Parameters().properties()
-            .setFileName("trueno.config")
-            .setListDelimiterHandler(new DefaultListDelimiterHandler(','))
-            .setThrowExceptionOnMissing(true));
+        PropertiesConfiguration configuration;
 
-        try {
-            PropertiesConfiguration configuration = builder.getConfiguration();
+        /* Check args list, if there's no arg then load params from config file */
+        if (args.length > 1) {
 
-            logger.info("cluster     [{}]", configuration.getString("elasticsearch.cluster.name"));
-            logger.info("port        [{}]", configuration.getInt("elasticsearch.cluster.port"));
-            logger.info("path home   [{}]", configuration.getString("elasticsearch.path.home"));
-            logger.info("path config [{}]", configuration.getString("elasticsearch.path.config"));
+            String host = args[0];
+            long   port = Integer.parseInt(args[1]);
 
-            Server myserver = new Server(configuration, null);
-            myserver.start();
-        } catch (ConfigurationException e) {
-            e.printStackTrace();
+            configuration = new PropertiesConfiguration();
+            configuration.setProperty(CONFIG_CLUSTER_NAME, host);
+            configuration.setProperty(CONFIG_CLUSTER_PORT, port);
+
+        } else {
+
+            /* Load configuration */
+            FileBasedConfigurationBuilder<PropertiesConfiguration> builder =
+                    new FileBasedConfigurationBuilder<PropertiesConfiguration>(PropertiesConfiguration.class)
+                            .configure(new Parameters().properties()
+                                    .setFileName("trueno.config")
+                                    .setListDelimiterHandler(new DefaultListDelimiterHandler(','))
+                                    .setThrowExceptionOnMissing(true));
+
+            try {
+                configuration = builder.getConfiguration();
+            } catch (ConfigurationException e) {
+                /* If it's not possible to load the configuration file, then abort */
+                logger.error("Aborting initialization...");
+                logger.error(e.getMessage());
+                e.printStackTrace();
+                return;
+            }
         }
+
+        logger.info("cluster     [{}]", configuration.getString(CONFIG_CLUSTER_NAME));
+        logger.info("port        [{}]", configuration.getInt(CONFIG_CLUSTER_PORT));
+        logger.info("path home   [{}]", configuration.getString(CONFIG_PATH_HOME));
+        logger.info("path config [{}]", configuration.getString(CONFIG_PATH_CFG));
+
+        Server myserver = new Server(configuration, null);
+        myserver.start();
 
     }
 
