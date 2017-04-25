@@ -78,7 +78,7 @@ public class Server extends WebSocketServer {
     public Server(PropertiesConfiguration config, Draft draft) throws UnknownHostException {
         super(new InetSocketAddress(config.getInt("elasticsearch.cluster.port")));
 
-        logger.info("Starting ES server on {} ", config.getInt("elasticsearch.cluster.port"));
+        System.out.println("Starting ES server on {} "+ config.getInt("elasticsearch.cluster.port"));
 
         String name = config.getString("elasticsearch.cluster.name");
         String home = config.getString("elasticsearch.path.home");
@@ -146,14 +146,14 @@ public class Server extends WebSocketServer {
                         @Override
                         public void onResponse(CreateIndexResponse createIndexResponse) {
 
-                            logger.info("CREATE - {} done.", obj.getIndex());
+                            System.out.println("CREATE - {} done."+ obj.getIndex());
 
                         }
 
                         @Override
                         public void onFailure(Throwable throwable) {
 
-                            logger.info("CREATE - error: {}", msg.getObject());
+                            System.out.println("CREATE - error: {}"+ msg.getObject());
                             logger.error("{}", throwable);
 
                         }
@@ -178,12 +178,12 @@ public class Server extends WebSocketServer {
                 client.drop(obj).addListener(new ActionListener<DeleteIndexResponse>() {
                     @Override
                     public void onResponse(DeleteIndexResponse deleteIndexResponse) {
-                        logger.info("DROP - {} done.", obj.getIndex());
+                        System.out.println("DROP - {} done."+ obj.getIndex());
                     }
 
                     @Override
                     public void onFailure(Throwable throwable) {
-                        logger.info("DROP - error: {}", msg.getObject());
+                        System.out.println("DROP - error: {}"+ msg.getObject());
                         logger.error("{}", throwable);
                     }
                 });
@@ -206,7 +206,7 @@ public class Server extends WebSocketServer {
                         @Override
                         public void onResponse(IndexResponse response) {
 
-                            //logger.info("PERSIST - {}.", obj.getIndex());
+                            //System.out.println("PERSIST - {}."+ obj.getIndex());
                             Response resp = new Response();
                             resp.setCallbackIndex(msg.getCallbackIndex());
                             resp.setObject(new Map[0]);
@@ -218,7 +218,7 @@ public class Server extends WebSocketServer {
                         @Override
                         public void onFailure(Throwable throwable) {
 
-                            logger.info("PERSIST - error: {}", msg.getObject());
+                            System.out.println("PERSIST - error: {}"+ msg.getObject());
                             logger.error("{}", throwable);
 
                             Response response = new Response();
@@ -270,7 +270,7 @@ public class Server extends WebSocketServer {
                         totalRequest++;
 
                         if (totalRequest % TOTAL_REQUEST_REPORT == 0) {
-                            logger.info("SEARCH - Average execution time: {} ms",
+                            System.out.println("SEARCH - Average execution time: {} ms"+
                                     (totalTime * 0.000001) / totalRequest );
                             totalRequest = 0; totalTime = 0;
                         }
@@ -282,7 +282,7 @@ public class Server extends WebSocketServer {
                     @Override
                     public void onFailure(Throwable throwable) {
 
-                        logger.info("SEARCH - error: {}", msg.getObject());
+                        System.out.println("SEARCH - error: {}"+ msg.getObject());
                         logger.error("{}", throwable);
 
                         Response response = new Response();
@@ -312,8 +312,8 @@ public class Server extends WebSocketServer {
                         /* End time */
                         long estimatedTime = System.nanoTime() - startTime;
 
-                        logger.info("BULK - batch time: {} {} ms",
-                                estimatedTime * 0.000001,
+                        System.out.println("BULK - batch time: {} {} ms"+
+                                estimatedTime * 0.000001 + " "+
                                 bulkItemResponses.getItems().length);
 
                         if (bulkItemResponses.hasFailures()) {
@@ -329,7 +329,7 @@ public class Server extends WebSocketServer {
 
                     @Override
                     public void onFailure(Throwable throwable) {
-                        logger.info("BULK - error: {}", msg.getObject());
+                        System.out.println("BULK - error: {}"+ msg.getObject());
                         logger.error("{}", throwable);
 
                         Response response = new Response();
@@ -395,10 +395,10 @@ public class Server extends WebSocketServer {
             }
         }
 
-        logger.info("cluster     [{}]", configuration.getString(CONFIG_CLUSTER_NAME));
-        logger.info("port        [{}]", configuration.getInt(CONFIG_CLUSTER_PORT));
-        logger.info("path home   [{}]", configuration.getString(CONFIG_PATH_HOME));
-        logger.info("path config [{}]", configuration.getString(CONFIG_PATH_CFG));
+        System.out.println("cluster     [{}]"+ configuration.getString(CONFIG_CLUSTER_NAME));
+        System.out.println("port        [{}]"+ configuration.getInt(CONFIG_CLUSTER_PORT));
+        System.out.println("path home   [{}]"+ configuration.getString(CONFIG_PATH_HOME));
+        System.out.println("path config [{}]"+ configuration.getString(CONFIG_PATH_CFG));
 
         Server myserver = new Server(configuration, null);
         myserver.start();
