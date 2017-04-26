@@ -126,8 +126,11 @@ public class ElasticClient {
                         new InetSocketTransportAddress(new InetSocketAddress(InetAddress.getByName(addr), 9300))
                 );
             }
+            
+            System.out.println("Transport client setup complete");
         } catch (UnknownHostException ex) {
             logger.error("{}", ex);
+            System.out.println("Error while connecting transport client: " + ex);
         }
 
 
@@ -137,9 +140,6 @@ public class ElasticClient {
 //            .prepareHealth()
 //            .setWaitForGreenStatus()
 //            .execute().actionGet();
-
-        logger.info("Trueno Bridge server is up");
-        System.out.println("Trueno Bridge server is up");
     }
 
     /**

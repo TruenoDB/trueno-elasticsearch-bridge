@@ -6,11 +6,17 @@
     <groupId>org.trueno.elasticsearch.bridge</groupId>
     <artifactId>elasticsearch-bridge</artifactId>
     <version>1.0</version>
+    <repositories>
+        <repository>
+          <id>clojars.org</id>
+          <url>http://clojars.org/repo</url>
+        </repository>
+    </repositories>
     <dependencies>
         <dependency>
-            <groupId>org.java-websocket</groupId>
-            <artifactId>Java-WebSocket</artifactId>
-            <version>1.3.0</version>
+          <groupId>org.java-websocket</groupId>
+          <artifactId>java-websocket</artifactId>
+          <version>1.3.3</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>

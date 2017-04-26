@@ -81,8 +81,8 @@ public class Server extends WebSocketServer {
         System.out.println("Starting ES server on {} "+ config.getInt("elasticsearch.cluster.port"));
 
         String name = config.getString("elasticsearch.cluster.name");
-        String home = config.getString("elasticsearch.path.home");
-        String conf = config.getString("elasticsearch.path.config");
+        String home = "";//config.getString("elasticsearch.path.home");
+        String conf = "";//config.getString("elasticsearch.path.config");
 
         /* Instantiate the ElasticSearch client and connect to org.trueno.es.bridge.Server */
         this.client = new ElasticClient("trueno", name, home, conf);
@@ -96,7 +96,7 @@ public class Server extends WebSocketServer {
      */
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
-//        System.out.println( "Connection Opened" );
+        System.out.println( "Connection Opened" );
     }
 
     /**
@@ -108,7 +108,12 @@ public class Server extends WebSocketServer {
      */
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-//        System.out.println( "closed" );
+        System.out.println( "Connection Closed" );
+    }
+
+    @Override
+    public void onStart() {
+        System.out.println( "Server started!" );
     }
 
     /**
@@ -353,8 +358,8 @@ public class Server extends WebSocketServer {
      */
     @Override
     public void onError(WebSocket webSocket, Exception exception) {
+        System.out.println( "Error: " + exception.toString());
         logger.error(exception.getMessage());
-        System.out.println( "Error:" );
         exception.printStackTrace();
     }
 
@@ -388,6 +393,7 @@ public class Server extends WebSocketServer {
                 configuration = builder.getConfiguration();
             } catch (ConfigurationException e) {
                 /* If it's not possible to load the configuration file, then abort */
+                System.out.println("Aborting initialization: "+e.getMessage());
                 logger.error("Aborting initialization...");
                 logger.error(e.getMessage());
                 e.printStackTrace();
