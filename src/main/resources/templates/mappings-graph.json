@@ -1,0 +1,39 @@
+{
+  "g": {
+    "dynamic_templates": [
+      {
+        "notanalyzed": {
+          "match": "*",
+          "match_mapping_type": "string",
+          "mapping": {
+            "type": "string",
+            "index": "not_analyzed"
+          }
+        }
+      }
+    ],
+    "properties": {
+      "prop": {
+        "type": "object"
+      },
+      "computed": {
+        "type": "object"
+      },
+      "meta": {
+        "type": "object"
+      },
+      "label": {
+        "type": "string"
+      },
+      "directed": {
+        "type": "boolean"
+      },
+      "dynamic": {
+        "type": "boolean"
+      },
+      "multi": {
+        "type": "boolean"
+      }
+    }
+  }
+}

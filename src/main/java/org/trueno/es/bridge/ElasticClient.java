@@ -140,6 +140,8 @@ public class ElasticClient {
 //            .prepareHealth()
 //            .setWaitForGreenStatus()
 //            .execute().actionGet();
+
+        logger.info("Trueno Bridge server is up");
     }
 
     /**

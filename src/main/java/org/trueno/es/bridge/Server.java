@@ -96,7 +96,8 @@ public class Server extends WebSocketServer {
      */
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
-        System.out.println( "Connection Opened" );
+//        System.out.println( "Connection Opened" );
+        logger.info("onOpen");
     }
 
     /**
@@ -125,6 +126,8 @@ public class Server extends WebSocketServer {
     public void onMessage(WebSocket conn, String message) {
 
         Message msg = new Gson().fromJson(message, Message.class);
+
+        logger.info("onMessage -> {}", message);
 
         // TODO. Define a basic structure/contract for handling the message.
         // For instance, define an abstract class/interface. Basic events can be defined as function (which has
@@ -363,6 +366,10 @@ public class Server extends WebSocketServer {
         exception.printStackTrace();
     }
 
+    @Override
+    public void onStart() {
+        System.out.println("Trueno Bridge server is up");
+    }
 
     /* Main */
     public static void main(String args[]) throws UnknownHostException {
@@ -406,6 +413,7 @@ public class Server extends WebSocketServer {
         System.out.println("path home   [{}]"+ configuration.getString(CONFIG_PATH_HOME));
         System.out.println("path config [{}]"+ configuration.getString(CONFIG_PATH_CFG));
 
+        /* Start the server */
         Server myserver = new Server(configuration, null);
         myserver.start();
 
