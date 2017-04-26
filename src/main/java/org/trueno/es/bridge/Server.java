@@ -112,11 +112,6 @@ public class Server extends WebSocketServer {
         System.out.println( "Connection Closed" );
     }
 
-    @Override
-    public void onStart() {
-        System.out.println( "Server started!" );
-    }
-
     /**
      *
      * @param conn
@@ -368,6 +363,7 @@ public class Server extends WebSocketServer {
 
     @Override
     public void onStart() {
+        System.out.println( "Server started!" );
         System.out.println("Trueno Bridge server is up");
     }
 

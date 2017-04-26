@@ -48,7 +48,7 @@ import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Scanner;
-
+import java.io.*;
 
 /**
  * @author victor
@@ -144,6 +144,25 @@ public class ElasticClient {
         logger.info("Trueno Bridge server is up");
     }
 
+    private String getResourceContent(String fileName){
+        
+        String content = "";
+
+        try{
+            InputStream in = getClass().getResourceAsStream(fileName); 
+            System.out.println("Input stream for resource "+ fileName + " is "+ in);
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+
+            content = new String();
+            for (String line; (line = reader.readLine()) != null; content += line);
+        }catch(Exception e){
+            System.out.println("Error reading resource content: "+ e.toString());
+            e.printStackTrace();
+        }
+
+        return content;
+    }
     /**
      *
      * @param data
@@ -155,21 +174,24 @@ public class ElasticClient {
         try {
 
             /* mappings */
-            String mappingG = new String(Files.readAllBytes(
-                    Paths.get(getClass()
-                            .getClassLoader()
-                            .getResource("templates/mappings-graph.json").toURI()))
-            );
-            String mappingV = new String(Files.readAllBytes(
-                    Paths.get(getClass()
-                            .getClassLoader()
-                            .getResource("templates/mappings-vertices.json").toURI()))
-            );
-            String mappingE = new String(Files.readAllBytes(
-                    Paths.get(getClass()
-                            .getClassLoader()
-                            .getResource("templates/mappings-edges.json").toURI()))
-            );
+            String mappingG = getResourceContent("/mappings-graph.json");
+            // String mappingG = new String(Files.readAllBytes(
+            //         Paths.get(getClass()
+            //                 .getClassLoader()
+            //                 .getResource("resources/mappings-graph.json").toURI()))
+            // );
+            String mappingV = getResourceContent("/mappings-vertices.json");
+            // String mappingV = new String(Files.readAllBytes(
+            //         Paths.get(getClass()
+            //                 .getClassLoader()
+            //                 .getResource("resources/mappings-vertices.json").toURI()))
+            // );
+            String mappingE = getResourceContent("/mappings-edges.json");
+            // String mappingE = new String(Files.readAllBytes(
+            //         Paths.get(getClass()
+            //                 .getClassLoader()
+            //                 .getResource("resources/mappings-edges.json").toURI()))
+            // );
 
             return this.client.admin().indices().prepareCreate(data.getIndex())
                     .setSettings(Settings.builder()
