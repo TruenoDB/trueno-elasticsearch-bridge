@@ -76,7 +76,7 @@ public class Server extends WebSocketServer {
      * @throws UnknownHostException
      */
     public Server(PropertiesConfiguration config, Draft draft) throws UnknownHostException {
-        super(new InetSocketAddress(config.getInt("elasticsearch.cluster.port")));
+        super(new InetSocketAddress("0.0.0.0", config.getInt("elasticsearch.cluster.port")));
 
         System.out.println("Starting ES server on {} "+ config.getInt("elasticsearch.cluster.port"));
 
