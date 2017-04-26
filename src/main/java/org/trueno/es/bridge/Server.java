@@ -45,6 +45,8 @@ import org.slf4j.LoggerFactory;
  */
 public class Server extends WebSocketServer {
 
+    // FIXME How do we know that the server really started?
+    // The main branch has a onStart event, but it's not available on any of the releases of this jar.
     public static final Logger logger = LoggerFactory.getLogger(Server.class);
 
     /* Elasticsearch Client */
@@ -97,6 +99,7 @@ public class Server extends WebSocketServer {
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
 //        System.out.println( "Connection Opened" );
+        logger.info("onOpen");
     }
 
     /**
@@ -109,6 +112,7 @@ public class Server extends WebSocketServer {
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
 //        System.out.println( "closed" );
+        logger.info("onClose -> {}", reason);
     }
 
     /**
@@ -120,6 +124,8 @@ public class Server extends WebSocketServer {
     public void onMessage(WebSocket conn, String message) {
 
         Message msg = new Gson().fromJson(message, Message.class);
+
+        logger.info("onMessage -> {}", message);
 
         // TODO. Define a basic structure/contract for handling the message.
         // For instance, define an abstract class/interface. Basic events can be defined as function (which has
@@ -358,6 +364,10 @@ public class Server extends WebSocketServer {
         exception.printStackTrace();
     }
 
+    @Override
+    public void onStart() {
+        System.out.println("Trueno Bridge server is up");
+    }
 
     /* Main */
     public static void main(String args[]) throws UnknownHostException {
@@ -400,6 +410,7 @@ public class Server extends WebSocketServer {
         logger.info("path home   [{}]", configuration.getString(CONFIG_PATH_HOME));
         logger.info("path config [{}]", configuration.getString(CONFIG_PATH_CFG));
 
+        /* Start the server */
         Server myserver = new Server(configuration, null);
         myserver.start();
 

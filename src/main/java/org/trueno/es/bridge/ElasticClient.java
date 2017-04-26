@@ -139,7 +139,6 @@ public class ElasticClient {
 //            .execute().actionGet();
 
         logger.info("Trueno Bridge server is up");
-        System.out.println("Trueno Bridge server is up");
     }
 
     /**

@@ -43,7 +43,6 @@ jspm_packages
 *.class
 
 # Directories for temporal files or IDE configurations
-src/main/resources/
 target/
 
 # IDE
