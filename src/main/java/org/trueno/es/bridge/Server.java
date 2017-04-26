@@ -373,7 +373,11 @@ public class Server extends WebSocketServer {
         PropertiesConfiguration configuration;
 
         /* Check args list, if there's no arg then load params from config file */
-        if (args.length > 1) {
+        if (args.length > 0) {
+
+            /*display incoming ports and host */
+            System.out.println("HOST: "+args[0]);
+            System.out.println("PORT: "+args[1]);
 
             String host = args[0];
             long   port = Integer.parseInt(args[1]);
