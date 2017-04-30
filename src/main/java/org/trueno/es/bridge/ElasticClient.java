@@ -123,7 +123,8 @@ public class ElasticClient {
 
             for (String addr : this.addresses) {
                 this.client.addTransportAddress(
-                        new InetSocketTransportAddress(new InetSocketAddress(InetAddress.getByName(addr), 9300))
+                        new InetSocketTransportAddress(
+                                new InetSocketAddress(InetAddress.getByName(addr), 9300))
                 );
             }
             
@@ -149,7 +150,7 @@ public class ElasticClient {
         String content = "";
 
         try{
-            InputStream in = getClass().getResourceAsStream(fileName); 
+            InputStream in = getClass().getClassLoader().getResourceAsStream(fileName);
             System.out.println("Input stream for resource "+ fileName + " is "+ in);
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
@@ -174,29 +175,29 @@ public class ElasticClient {
         try {
 
             /* mappings */
-            String mappingG = getResourceContent("/mappings-graph.json");
+             String mappingG = getResourceContent("templates/mappings-graph.json");
             // String mappingG = new String(Files.readAllBytes(
             //         Paths.get(getClass()
             //                 .getClassLoader()
-            //                 .getResource("resources/mappings-graph.json").toURI()))
+            //                 .getResource("templates/mappings-graph.json").toURI()))
             // );
-            String mappingV = getResourceContent("/mappings-vertices.json");
+             String mappingV = getResourceContent("templates/mappings-vertices.json");
             // String mappingV = new String(Files.readAllBytes(
             //         Paths.get(getClass()
             //                 .getClassLoader()
-            //                 .getResource("resources/mappings-vertices.json").toURI()))
+            //                 .getResource("templates/mappings-vertices.json").toURI()))
             // );
-            String mappingE = getResourceContent("/mappings-edges.json");
+             String mappingE = getResourceContent("templates/mappings-edges.json");
             // String mappingE = new String(Files.readAllBytes(
             //         Paths.get(getClass()
             //                 .getClassLoader()
-            //                 .getResource("resources/mappings-edges.json").toURI()))
+            //                 .getResource("templates/mappings-edges.json").toURI()))
             // );
 
             return this.client.admin().indices().prepareCreate(data.getIndex())
                     .setSettings(Settings.builder()
-                            .put("index.number_of_shards", 1)
-                            .put("index.number_of_replicas", 1)
+                            .put("index.number_of_shards", data.getShards())
+                            .put("index.number_of_replicas", data.getReplicas())
                             .put("index.requests.cache.enable", true))
                     .addMapping("e", mappingE)
                     .addMapping("v", mappingV)

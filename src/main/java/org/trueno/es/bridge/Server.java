@@ -47,14 +47,17 @@ public class Server extends WebSocketServer {
 
     public static final Logger logger = LoggerFactory.getLogger(Server.class);
 
-    /* Elasticsearch Client */
-    private final ElasticClient client;
-
     /* Configuration keys */
-    static final String CONFIG_CLUSTER_NAME = "elasticsearch.cluster.name";
-    static final String CONFIG_CLUSTER_PORT = "elasticsearch.cluster.port";
-    static final String CONFIG_PATH_HOME    = "elasticsearch.path.home";
-    static final String CONFIG_PATH_CFG     = "elasticsearch.path.config";
+    static final String CONFIG_CLUSTER_NAME     = "elasticsearch.cluster.name";
+    static final String CONFIG_CLUSTER_PORT     = "elasticsearch.cluster.port";
+    static final String CONFIG_PATH_HOME        = "elasticsearch.path.home";
+    static final String CONFIG_PATH_CFG         = "elasticsearch.path.config";
+    static final String CONFIG_DEFAULT_SHARDS   = "elasticsearch.default.shards";
+    static final String CONFIG_DEFAULT_REPLICAS = "elasticsearch.default.replicas";
+
+    /* Defaults params values */
+    static final long DEFAULT_SHARDS   = 1;
+    static final long DEFAULT_REPLICAS = 1;
 
     /* Allowed actions/methods */
     static final String ACTION_SEARCH  = "SEARCH";
@@ -66,8 +69,13 @@ public class Server extends WebSocketServer {
 
     /* Stats */
     static final long TOTAL_REQUEST_REPORT = 5000;
-    long totalTime = 0;
+    long totalTime    = 0;
     long totalRequest = 0;
+
+    /* Elasticsearch Client */
+    private final ElasticClient client;
+    /* Configuration */
+    PropertiesConfiguration configuration;
 
     /**
      * Construct a {@link Server} instance.
@@ -84,32 +92,21 @@ public class Server extends WebSocketServer {
         String home = "";//config.getString("elasticsearch.path.home");
         String conf = "";//config.getString("elasticsearch.path.config");
 
+        this.configuration = config;
+
         /* Instantiate the ElasticSearch client and connect to org.trueno.es.bridge.Server */
         this.client = new ElasticClient("trueno", name, home, conf);
         this.client.connect();
     }
 
-    /**
-     *
-     * @param conn
-     * @param handshake
-     */
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
-//        System.out.println( "Connection Opened" );
-        logger.info("onOpen");
+        // System.out.println( "Connection Opened" );
     }
 
-    /**
-     *
-     * @param conn
-     * @param code
-     * @param reason
-     * @param remote
-     */
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        System.out.println( "Connection Closed" );
+        // System.out.println( "Connection Closed" );
     }
 
     /**
@@ -128,21 +125,15 @@ public class Server extends WebSocketServer {
         // For instance, define an abstract class/interface. Basic events can be defined as function (which has
         // to been override). The treatment for error is similar for all cases.
 
-//        if (msg.getAction().equalsIgnoreCase(ACTION_SEARCH)) {
-//
-//        } else if (msg.getAction().equalsIgnoreCase(ACTION_BULK)) {
-//
-//        } else if (msg.getAction().equalsIgnoreCase(ACTION_CREATE_GRAPH)) {
-//
-//        } else if (msg.getAction().equalsIgnoreCase(ACTION_DROP_GRAPH)) {
-//
-//        }
-
         switch (msg.getAction().toUpperCase()) {
 
             case ACTION_CREATE_GRAPH: {
 
                 IndexObject obj = new Gson().fromJson(msg.getObject(), IndexObject.class);
+
+                /* Check for shards and replica arguments. If not set, use default values */
+                if (obj.isShardNotSet()) obj.setShards(this.configuration.getLong(CONFIG_DEFAULT_SHARDS));
+                if (obj.isReplicasNotSet()) obj.setReplicas(this.configuration.getLong(CONFIG_DEFAULT_REPLICAS));
 
                 try {
                     client.create(obj).addListener(new ActionListener<CreateIndexResponse>() {
@@ -349,11 +340,6 @@ public class Server extends WebSocketServer {
         }
     }
 
-    /**
-     *
-     * @param webSocket
-     * @param exception
-     */
     @Override
     public void onError(WebSocket webSocket, Exception exception) {
         System.out.println( "Error: " + exception.toString());
@@ -363,8 +349,21 @@ public class Server extends WebSocketServer {
 
     @Override
     public void onStart() {
-        System.out.println( "Server started!" );
-        System.out.println("Trueno Bridge server is up");
+        System.out.println("Trueno Bridge server is up" );
+        System.out.println("Trueno Bridge Server ["
+                + this.configuration.getString(CONFIG_CLUSTER_NAME) + "]"
+                + " is listening at port "
+                + this.configuration.getString(CONFIG_CLUSTER_PORT));
+
+        /* Display configuration values */
+        System.out.println(" =============================================== ");
+        System.out.format("   cluster          [%s]\n", configuration.getString(CONFIG_CLUSTER_NAME));
+        System.out.format("   port             [%d]\n", configuration.getInt(CONFIG_CLUSTER_PORT));
+        System.out.format("   default shards   [%d]\n", configuration.getLong(CONFIG_DEFAULT_SHARDS));
+        System.out.format("   default replicas [%d]\n", configuration.getLong(CONFIG_DEFAULT_REPLICAS));
+        System.out.format("   path home        [%s]\n", configuration.getString(CONFIG_PATH_HOME));
+        System.out.format("   path config      [%s]\n", configuration.getString(CONFIG_PATH_CFG));
+        System.out.println(" =============================================== ");
     }
 
     /* Main */
@@ -375,16 +374,16 @@ public class Server extends WebSocketServer {
         /* Check args list, if there's no arg then load params from config file */
         if (args.length > 0) {
 
-            /*display incoming ports and host */
-            System.out.println("HOST: "+args[0]);
-            System.out.println("PORT: "+args[1]);
-
             String host = args[0];
-            long   port = Integer.parseInt(args[1]);
+            long port   = Integer.parseInt(args[1]);
+            long shards   = (args.length > 2) ? Integer.parseInt(args[2]) : DEFAULT_SHARDS;
+            long replicas = (args.length > 3) ? Integer.parseInt(args[3]) : DEFAULT_REPLICAS;
 
             configuration = new PropertiesConfiguration();
             configuration.setProperty(CONFIG_CLUSTER_NAME, host);
             configuration.setProperty(CONFIG_CLUSTER_PORT, port);
+            configuration.setProperty(CONFIG_DEFAULT_SHARDS, shards);
+            configuration.setProperty(CONFIG_DEFAULT_REPLICAS, replicas);
 
         } else {
 
@@ -400,18 +399,13 @@ public class Server extends WebSocketServer {
                 configuration = builder.getConfiguration();
             } catch (ConfigurationException e) {
                 /* If it's not possible to load the configuration file, then abort */
-                System.out.println("Aborting initialization: "+e.getMessage());
+                System.out.println("Aborting initialization: " + e.getMessage());
                 logger.error("Aborting initialization...");
                 logger.error(e.getMessage());
                 e.printStackTrace();
                 return;
             }
         }
-
-        System.out.println("cluster     [{}]"+ configuration.getString(CONFIG_CLUSTER_NAME));
-        System.out.println("port        [{}]"+ configuration.getInt(CONFIG_CLUSTER_PORT));
-        System.out.println("path home   [{}]"+ configuration.getString(CONFIG_PATH_HOME));
-        System.out.println("path config [{}]"+ configuration.getString(CONFIG_PATH_CFG));
 
         /* Start the server */
         Server myserver = new Server(configuration, null);
