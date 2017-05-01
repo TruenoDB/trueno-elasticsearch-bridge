@@ -119,7 +119,7 @@ public class Server extends WebSocketServer {
 
         Message msg = new Gson().fromJson(message, Message.class);
 
-        logger.info("onMessage -> {}", message);
+        // logger.info("onMessage -> {}", message);
 
         // TODO. Define a basic structure/contract for handling the message.
         // For instance, define an abstract class/interface. Basic events can be defined as function (which has
