@@ -109,11 +109,6 @@ public class Server extends WebSocketServer {
         // System.out.println( "Connection Closed" );
     }
 
-    /**
-     *
-     * @param conn
-     * @param message
-     */
     @Override
     public void onMessage(WebSocket conn, String message) {
 
@@ -145,10 +140,10 @@ public class Server extends WebSocketServer {
                         }
 
                         @Override
-                        public void onFailure(Throwable throwable) {
+                        public void onFailure(Exception ex) {
 
                             System.out.println("CREATE - error: {}"+ msg.getObject());
-                            logger.error("{}", throwable);
+                            logger.error("{}", ex);
 
                         }
                     });
@@ -176,9 +171,9 @@ public class Server extends WebSocketServer {
                     }
 
                     @Override
-                    public void onFailure(Throwable throwable) {
+                    public void onFailure(Exception ex) {
                         System.out.println("DROP - error: {}"+ msg.getObject());
-                        logger.error("{}", throwable);
+                        logger.error("{}", ex);
                     }
                 });
 
@@ -210,10 +205,10 @@ public class Server extends WebSocketServer {
                         }
 
                         @Override
-                        public void onFailure(Throwable throwable) {
+                        public void onFailure(Exception ex) {
 
                             System.out.println("PERSIST - error: {}"+ msg.getObject());
-                            logger.error("{}", throwable);
+                            logger.error("{}", ex);
 
                             Response response = new Response();
                             response.setCallbackIndex(msg.getCallbackIndex());
@@ -274,10 +269,10 @@ public class Server extends WebSocketServer {
                     }
 
                     @Override
-                    public void onFailure(Throwable throwable) {
+                    public void onFailure(Exception ex) {
 
                         System.out.println("SEARCH - error: {}"+ msg.getObject());
-                        logger.error("{}", throwable);
+                        logger.error("{}", ex);
 
                         Response response = new Response();
                         response.setCallbackIndex(msg.getCallbackIndex());
@@ -286,6 +281,7 @@ public class Server extends WebSocketServer {
                         conn.send( new Gson().toJson(response) );
 
                     }
+
                 });
                 break;
 
@@ -322,9 +318,9 @@ public class Server extends WebSocketServer {
                     }
 
                     @Override
-                    public void onFailure(Throwable throwable) {
+                    public void onFailure(Exception ex) {
                         System.out.println("BULK - error: {}"+ msg.getObject());
-                        logger.error("{}", throwable);
+                        logger.error("{}", ex);
 
                         Response response = new Response();
                         response.setCallbackIndex(msg.getCallbackIndex());

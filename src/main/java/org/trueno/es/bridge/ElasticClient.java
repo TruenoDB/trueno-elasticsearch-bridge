@@ -11,18 +11,12 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.Base64;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.engine.Engine;
-import org.trueno.es.bridge.action.BulkObject;
-import org.trueno.es.bridge.action.DocumentObject;
-import org.trueno.es.bridge.action.IndexObject;
-import org.trueno.es.bridge.action.SearchObject;
-
 import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -33,10 +27,15 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
 
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.trueno.es.bridge.action.BulkObject;
+import org.trueno.es.bridge.action.DocumentObject;
+import org.trueno.es.bridge.action.IndexObject;
+import org.trueno.es.bridge.action.SearchObject;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -111,15 +110,16 @@ public class ElasticClient {
 //        /* Instantiate node client */
 //        this.client = node.client();
 
-        /* Prepare settings */
+
         try {
-            Settings settings = Settings.settingsBuilder()
+
+            /* Prepare settings */
+            Settings settings = Settings.builder()
                     .put("cluster.name", this.clusterName)
                     .build();
-        /* Instantiate transport client */
-            this.client = TransportClient.builder()
-                    .settings(settings)
-                    .build();
+
+            /* Instantiate transport client */
+            this.client = new PreBuiltTransportClient(settings);
 
             for (String addr : this.addresses) {
                 this.client.addTransportAddress(
@@ -129,6 +129,7 @@ public class ElasticClient {
             }
             
             System.out.println("Transport client setup complete");
+
         } catch (UnknownHostException ex) {
             logger.error("{}", ex);
             System.out.println("Error while connecting transport client: " + ex);
@@ -145,6 +146,11 @@ public class ElasticClient {
         logger.info("Trueno Bridge server is up");
     }
 
+    /**
+     *
+     * @param fileName
+     * @return
+     */
     private String getResourceContent(String fileName){
         
         String content = "";
@@ -164,6 +170,7 @@ public class ElasticClient {
 
         return content;
     }
+
     /**
      *
      * @param data
