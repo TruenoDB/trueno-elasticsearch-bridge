@@ -1,19 +1,22 @@
 package org.trueno.es.bridge.action;
 
 /**
- * Created by victor on 2/24/17.
+ * This class defines an input object for search action request. The object holds all the required information to
+ * perform a search action on the Trueno database.
+ *
+ * @author Victor O. Santos Uceta
+ * @author Edgardo Barsallo Yi (ebarsallo)
  */
-public class SearchObject {
+public class SearchObject extends AbstractObject{
 
     private String query;
-    private String index;
     private String type;
-
-    public SearchObject() {
-
-    }
-
     private int size;
+
+    /* ---------------------------------------------------------------------------
+     * Getter and Setter methods
+     * ---------------------------------------------------------------------------
+     */
 
     public String getQuery() {
         return query;
@@ -21,14 +24,6 @@ public class SearchObject {
 
     public void setQuery(String query) {
         this.query = query;
-    }
-
-    public String getIndex() {
-        return index;
-    }
-
-    public void setIndex(String index) {
-        this.index = index;
     }
 
     public String getType() {

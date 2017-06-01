@@ -1,32 +1,19 @@
-package org.trueno.es.bridge;
+package org.trueno.es.client;
 
-import com.google.gson.Gson;
-import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
-import org.elasticsearch.action.index.IndexAction;
-import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.engine.Engine;
 import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.node.Node;
 
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.slf4j.Logger;
@@ -36,58 +23,48 @@ import org.trueno.es.bridge.action.BulkObject;
 import org.trueno.es.bridge.action.DocumentObject;
 import org.trueno.es.bridge.action.IndexObject;
 import org.trueno.es.bridge.action.SearchObject;
+import org.trueno.es.bridge.exception.NoMappingFoundException;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Scanner;
 import java.io.*;
 
 /**
- * @author victor
- * @author servio
- * @author ebarsallo
+ * @author Victor Santos U.
+ * @author maverick-zhn (Servio Palacios)
+ * @author Edgardo Barsallo Yi (ebarsallo)
  *
- * Elasticsearch client.
+ * Elasticsearch Transport Client.
  * Includes the following operations:
  * <ul>
  *     <li>Search</li>
  *     <li>Bulk insert/delete</li>
  * </ul>
  */
-public class ElasticClient {
+public class ElasticTransportClient {
 
-    public static final Logger logger = LoggerFactory.getLogger(ElasticClient.class);
+    public static final Logger logger = LoggerFactory.getLogger(ElasticTransportClient.class);
 
-    /* Node client */
-//    private Node node;
-//    private Client client;
     /* Transport client */
     private TransportClient client;
-    /* Settings */
+
+    /* Cluster name */
     private String clusterName;
-    private String pathHome;
-    private String pathConf;
+    /* Host address that conforms the cluster */
     private String[] addresses;
 
-
     /**
-     * Constructor
-     * @param clusterName -> String
-     * @param addresses -> String
+     * Construct a new instance of the {@link ElasticTransportClient}
+     *
+     * @param name       the name of the Elasticsearch cluster.
+     * @param addresses  the
      */
-    public ElasticClient(String clusterName, String addresses, String pathHome, String pathConf) {
+    public ElasticTransportClient(String name, String addresses) {
         /* set cluster name and addresses */
-        this.clusterName = clusterName;
-        this.addresses = addresses.split(",");
-        this.pathHome = pathHome;
-        this.pathConf = pathConf;
+        this.clusterName = name;
+        this.addresses   = addresses.split(",");
     }
 
     /**
@@ -151,11 +128,12 @@ public class ElasticClient {
      * @param fileName
      * @return
      */
-    private String getResourceContent(String fileName){
+    private String getResourceContent(String fileName) throws NoMappingFoundException {
         
         String content = "";
 
         try{
+
             InputStream in = getClass().getClassLoader().getResourceAsStream(fileName);
             System.out.println("Input stream for resource "+ fileName + " is "+ in);
 
@@ -163,9 +141,12 @@ public class ElasticClient {
 
             content = new String();
             for (String line; (line = reader.readLine()) != null; content += line);
-        }catch(Exception e){
-            System.out.println("Error reading resource content: "+ e.toString());
-            e.printStackTrace();
+
+        } catch (IOException ex) {
+            System.out.println("Error reading resource content: " + ex.toString());
+            ex.printStackTrace();
+
+            new NoMappingFoundException(fileName, "Mapping not found", ex);
         }
 
         return content;
@@ -177,9 +158,10 @@ public class ElasticClient {
      * @return
      * @throws Exception
      */
-    public ListenableActionFuture<CreateIndexResponse> create(IndexObject data) throws Exception {
+    public ListenableActionFuture<CreateIndexResponse> create(IndexObject data) throws NoMappingFoundException
+    {
 
-        try {
+//        try {
 
             /* mappings */
              String mappingG = getResourceContent("templates/mappings-graph.json");
@@ -201,20 +183,21 @@ public class ElasticClient {
             //                 .getResource("templates/mappings-edges.json").toURI()))
             // );
 
+
             return this.client.admin().indices().prepareCreate(data.getIndex())
                     .setSettings(Settings.builder()
                             .put("index.number_of_shards", data.getShards())
                             .put("index.number_of_replicas", data.getReplicas())
                             .put("index.requests.cache.enable", true))
-                    .addMapping("e", mappingE)
-                    .addMapping("v", mappingV)
-                    .addMapping("g", mappingG)
+                    .addMapping("e", mappingE, XContentType.JSON)
+                    .addMapping("v", mappingV, XContentType.JSON)
+                    .addMapping("g", mappingG, XContentType.JSON)
                     .execute();
-        } catch (Exception ex) {
-            // FIXME. Use a custom Exception class
-            logger.error("{}", ex);
-            throw ex;
-        }
+//        } catch (Exception ex) {
+//            // FIXME. Use a custom Exception class
+//            logger.error("{}", ex);
+//            throw ex;
+//        }
 
     }
 

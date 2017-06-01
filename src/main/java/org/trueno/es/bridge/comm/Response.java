@@ -1,34 +1,96 @@
 package org.trueno.es.bridge.comm;
 
-import com.google.gson.JsonObject;
-
+import java.util.ArrayList;
 import java.util.Map;
 
 /**
- * Created by ebarsallo on 3/14/17.
+ * {@link Response} denotes an outgoing or response message after perform an action request. The outgoing message
+ * wrap the final status of the request, the results (a collection of JSON objects represented by a {@link Map}, and
+ * an {@link Exception} class if it is the case.
+ *
+ * @author Edgardo Barsallo Yi (ebarsallo)
  */
 public class Response {
 
-    private String callbackIndex;
-    private Map<String,Object>[] object;
+    private String callbackId;
+    private int status;
+    private ArrayList<Map<String,Object>> resultSet;
+    private Exception exception;
+
+    /* ---------------------------------------------------------------------------
+     * Constructors
+     * ---------------------------------------------------------------------------
+     */
 
     public Response() {
-
     }
 
-    public String getCallbackIndex() {
-        return callbackIndex;
+    /**
+     * Construct a {@link Response} instance by specifying a callback id (to return the message to the client),
+     * the status of the request and a result set (JSON objects).
+     *
+     * @param callbackId    the callback identifier.
+     * @param status        the resulting status of the request.
+     * @param objects       the result set (after executing the request).
+     */
+    public Response(String callbackId, int status, ArrayList<Map<String, Object>> objects) {
+
+        setCallbackId(callbackId);
+        setResultSet(objects);
+        setStatus(status);
     }
 
-    public void setCallbackIndex(String callbackIndex) {
-        this.callbackIndex = callbackIndex;
+    /**
+     * Construct a {@link Response} instance by specifying a callback id (to return the message to the client),
+     * the status of the request, a result set (JSON objects) and a exception (in case of an error).
+     *
+     * @param callbackId    the callback identifier.
+     * @param status        the resulting status of the request.
+     * @param objects       the result set (after executing the request).
+     * @param ex            the exception reported
+     */
+    public Response(String callbackId, int status, ArrayList<Map<String, Object>> objects, Exception ex) {
+        this(callbackId, status, objects);
+
+        /* Set exception */
+        setException(ex);
     }
 
-    public Map<String, Object>[] getObject() {
-        return object;
+    /* ---------------------------------------------------------------------------
+     * Getter and Setter methods
+     * ---------------------------------------------------------------------------
+     */
+
+    public String getCallbackId() {
+        return callbackId;
     }
 
-    public void setObject(Map<String, Object>[] object) {
-        this.object = object;
+    public void setCallbackId(String callbackId) {
+        this.callbackId = callbackId;
     }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
+    public ArrayList<Map<String, Object>> getResultSet() {
+        return resultSet;
+    }
+
+    public void setResultSet(ArrayList<Map<String, Object>> object) {
+        this.resultSet = object;
+    }
+
+    public Exception getException() {
+        return exception;
+    }
+
+    public void setException(Exception exception) {
+        this.exception = exception;
+    }
+
 }

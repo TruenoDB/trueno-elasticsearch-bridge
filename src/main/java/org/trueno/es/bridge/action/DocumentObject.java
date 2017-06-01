@@ -3,20 +3,23 @@ package org.trueno.es.bridge.action;
 import java.util.Map;
 
 
-public class DocumentObject {
+/**
+ * This class defines an input object for action request which involve index management. The object holds all
+ * the required information to perform a persist a document on the Trueno database.
+ *
+ * @author Edgardo Barsallo Yi (ebarsallo)
+ */
 
-    private String index;
+public class DocumentObject extends AbstractObject {
+
     private String type;
     private String id;
     private Map<String,Object> source;
 
-    public String getIndex() {
-        return index;
-    }
-
-    public void setIndex(String index) {
-        this.index = index;
-    }
+    /* ---------------------------------------------------------------------------
+     * Getter and Setter methods
+     * ---------------------------------------------------------------------------
+     */
 
     public String getType() {
         return type;

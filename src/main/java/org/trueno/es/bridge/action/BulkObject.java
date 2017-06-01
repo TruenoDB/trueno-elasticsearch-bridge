@@ -1,12 +1,20 @@
 package org.trueno.es.bridge.action;
 
 /**
- * Created by victor on 2/24/17.
+ * This class defines an input object for bulk action request. The object holds all the required information to
+ * perform a bulk (insert or delete) action on the Trueno database.
+ *
+ * @author Victor O. Santos Uceta
+ * @author Edgardo Barsallo Yi (ebarsallo)
  */
-public class BulkObject {
+public class BulkObject extends AbstractObject {
 
-    private String index;
     private String[][] operations;
+
+    /* ---------------------------------------------------------------------------
+     * Getter and Setter methods
+     * ---------------------------------------------------------------------------
+     */
 
     public String[][] getOperations() {
         return operations;
@@ -16,11 +24,4 @@ public class BulkObject {
         this.operations = operations;
     }
 
-    public String getIndex() {
-        return index;
-    }
-
-    public void setIndex(String index) {
-        this.index = index;
-    }
 }

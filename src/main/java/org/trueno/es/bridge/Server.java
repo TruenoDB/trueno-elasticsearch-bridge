@@ -1,49 +1,39 @@
 package org.trueno.es.bridge;
 
-import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
-import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
-import org.elasticsearch.action.index.IndexResponse;
-import org.trueno.es.bridge.action.DocumentObject;
-import org.trueno.es.bridge.action.IndexObject;
-import org.trueno.es.bridge.comm.Message;
-import org.trueno.es.bridge.comm.Response;
-import org.trueno.es.bridge.action.BulkObject;
-import org.trueno.es.bridge.action.SearchObject;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Map;
-
-import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
-
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
+import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.ActionResponse;
+import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
+import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 
 import org.java_websocket.WebSocket;
-import org.java_websocket.drafts.Draft;
-import org.java_websocket.handshake.ClientHandshake;
-import org.java_websocket.server.WebSocketServer;
+
+import com.google.common.collect.ImmutableMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.trueno.es.bridge.comm.Message;
+import org.trueno.es.bridge.comm.Response;
+
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- *
- * @author victor
- * @author ebarsallo
- *
+ * @author Victor Santos U.
+ * @author Edgardo Barsallo Yi (ebarsallo)
  */
-public class Server extends WebSocketServer {
+public class Server extends AbstractServer {
 
     public static final Logger logger = LoggerFactory.getLogger(Server.class);
 
@@ -55,331 +45,162 @@ public class Server extends WebSocketServer {
     static final String CONFIG_DEFAULT_SHARDS   = "elasticsearch.default.shards";
     static final String CONFIG_DEFAULT_REPLICAS = "elasticsearch.default.replicas";
 
-    /* Defaults params values */
-    static final long DEFAULT_SHARDS   = 1;
-    static final long DEFAULT_REPLICAS = 1;
-
-    /* Allowed actions/methods */
-    static final String ACTION_SEARCH  = "SEARCH";
-    static final String ACTION_BULK    = "BULK";
-    static final String ACTION_PERSIST = "PERSIST";
-    static final String ACTION_CREATE_GRAPH  = "CREATE";
-    static final String ACTION_OPEN_GRAPH    = "OPEN";
-    static final String ACTION_DROP_GRAPH    = "DROP";
-
-    /* Stats */
-    static final long TOTAL_REQUEST_REPORT = 5000;
-    long totalTime    = 0;
-    long totalRequest = 0;
-
-    /* Elasticsearch Client */
-    private final ElasticClient client;
-    /* Configuration */
-    PropertiesConfiguration configuration;
 
     /**
-     * Construct a {@link Server} instance.
-     * @param config
-     * @param draft
-     * @throws UnknownHostException
+     * Construct an instance of the {@link Server} that will handle trueno requests.
+     *
+     * @param configuration  the {@link PropertiesConfiguration} instance with all the params needed.
      */
-    public Server(PropertiesConfiguration config, Draft draft) throws UnknownHostException {
-        super(new InetSocketAddress("0.0.0.0", config.getInt("elasticsearch.cluster.port")));
-
-        System.out.println("Starting ES server on {} "+ config.getInt("elasticsearch.cluster.port"));
-
-        String name = config.getString("elasticsearch.cluster.name");
-        String home = "";//config.getString("elasticsearch.path.home");
-        String conf = "";//config.getString("elasticsearch.path.config");
-
-        this.configuration = config;
-
-        /* Instantiate the ElasticSearch client and connect to org.trueno.es.bridge.Server */
-        this.client = new ElasticClient("trueno", name, home, conf);
-        this.client.connect();
+    public Server(PropertiesConfiguration configuration)  {
+        super(configuration);
     }
 
-    @Override
-    public void onOpen(WebSocket conn, ClientHandshake handshake) {
-        // System.out.println( "Connection Opened" );
-    }
+    /* ---------------------------------------------------------------------------
+     * Interface (w/client)
+     * ---------------------------------------------------------------------------
+     */
 
     @Override
-    public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        // System.out.println( "Connection Closed" );
-    }
-
-    @Override
-    public void onMessage(WebSocket conn, String message) {
-
-        Message msg = new Gson().fromJson(message, Message.class);
-
-        // logger.info("onMessage -> {}", message);
-
-        // TODO. Define a basic structure/contract for handling the message.
-        // For instance, define an abstract class/interface. Basic events can be defined as function (which has
-        // to been override). The treatment for error is similar for all cases.
-
-        switch (msg.getAction().toUpperCase()) {
-
-            case ACTION_CREATE_GRAPH: {
-
-                IndexObject obj = new Gson().fromJson(msg.getObject(), IndexObject.class);
-
-                /* Check for shards and replica arguments. If not set, use default values */
-                if (obj.isShardNotSet()) obj.setShards(this.configuration.getLong(CONFIG_DEFAULT_SHARDS));
-                if (obj.isReplicasNotSet()) obj.setReplicas(this.configuration.getLong(CONFIG_DEFAULT_REPLICAS));
-
-                try {
-                    client.create(obj).addListener(new ActionListener<CreateIndexResponse>() {
-                        @Override
-                        public void onResponse(CreateIndexResponse createIndexResponse) {
-
-                            System.out.println("CREATE - {} done."+ obj.getIndex());
-
-                        }
-
-                        @Override
-                        public void onFailure(Exception ex) {
-
-                            System.out.println("CREATE - error: {}"+ msg.getObject());
-                            logger.error("{}", ex);
-
-                        }
-                    });
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                Response response = new Response();
-                response.setCallbackIndex(msg.getCallbackIndex());
-                response.setObject(new Map[0]);
-
-                conn.send( new Gson().toJson(response) );
-
-                break;
-            }
-
-            case ACTION_DROP_GRAPH: {
-
-                IndexObject obj = new Gson().fromJson(msg.getObject(), IndexObject.class);
-
-                client.drop(obj).addListener(new ActionListener<DeleteIndexResponse>() {
-                    @Override
-                    public void onResponse(DeleteIndexResponse deleteIndexResponse) {
-                        System.out.println("DROP - {} done."+ obj.getIndex());
-                    }
-
-                    @Override
-                    public void onFailure(Exception ex) {
-                        System.out.println("DROP - error: {}"+ msg.getObject());
-                        logger.error("{}", ex);
-                    }
-                });
-
-                // FIXME Define a functino to send response
-                Response response = new Response();
-                response.setCallbackIndex(msg.getCallbackIndex());
-                response.setObject(new Map[0]);
-
-                conn.send( new Gson().toJson(response) );
-                break;
-            }
-
-            case ACTION_PERSIST: {
-
-                DocumentObject obj = new Gson().fromJson(msg.getObject(), DocumentObject.class);
-
-                try {
-                    client.persist(obj).addListener(new ActionListener<IndexResponse>() {
-                        @Override
-                        public void onResponse(IndexResponse response) {
-
-                            //System.out.println("PERSIST - {}."+ obj.getIndex());
-                            Response resp = new Response();
-                            resp.setCallbackIndex(msg.getCallbackIndex());
-                            resp.setObject(new Map[0]);
-
-                            conn.send( new Gson().toJson(resp) );
-
-                        }
-
-                        @Override
-                        public void onFailure(Exception ex) {
-
-                            System.out.println("PERSIST - error: {}"+ msg.getObject());
-                            logger.error("{}", ex);
-
-                            Response response = new Response();
-                            response.setCallbackIndex(msg.getCallbackIndex());
-                            response.setObject(new Map[0]);
-
-                            conn.send( new Gson().toJson(response) );
-
-                        }
-                    });
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                break;
-            }
-
-            case ACTION_SEARCH: {
-                /* Start time */
-                long startTime = System.nanoTime();
-
-                SearchObject obj = new Gson().fromJson(msg.getObject(), SearchObject.class);
-
-                /* Get results */
-                client.search(obj).addListener(new ActionListener<SearchResponse>() {
-                    @Override
-                    public void onResponse(SearchResponse resp) {
-
-                        /* Collecting results */
-                        ArrayList<Map<String,Object>> sources = new ArrayList<>();
-
-                        SearchHit[] results = resp.getHits().getHits();
-
-                        /* for each hit result */
-                        for(SearchHit h: results){
-                            /* add map to array, note: a map is the equivalent of a JSON object */
-                            sources.add(ImmutableMap.of("_source", h.getSource()));
-                        }
-
-                        Response response = new Response();
-                        response.setCallbackIndex(msg.getCallbackIndex());
-                        response.setObject(sources.toArray(new Map[sources.size()]));
-
-                        /* End time */
-                        long estimatedTime = System.nanoTime() - startTime;
-
-                        /* Compute stats */
-                        totalTime += estimatedTime;
-                        totalRequest++;
-
-                        if (totalRequest % TOTAL_REQUEST_REPORT == 0) {
-                            System.out.println("SEARCH - Average execution time: {} ms"+
-                                    (totalTime * 0.000001) / totalRequest );
-                            totalRequest = 0; totalTime = 0;
-                        }
-
-                        conn.send( new Gson().toJson(response) );
-
-                    }
-
-                    @Override
-                    public void onFailure(Exception ex) {
-
-                        System.out.println("SEARCH - error: {}"+ msg.getObject());
-                        logger.error("{}", ex);
-
-                        Response response = new Response();
-                        response.setCallbackIndex(msg.getCallbackIndex());
-                        response.setObject(new Map[0]);
-
-                        conn.send( new Gson().toJson(response) );
-
-                    }
-
-                });
-                break;
-
-            }
-
-            case ACTION_BULK: {
-                BulkObject obj = new Gson().fromJson(msg.getObject(), BulkObject.class);
-
-                /* Start time */
-                long startTime = System.nanoTime();
-
-                /* get results */
-                client.bulk(obj).addListener(new ActionListener< BulkResponse>() {
-
-                    @Override
-                    public void onResponse(BulkResponse bulkItemResponses) {
-
-                        /* End time */
-                        long estimatedTime = System.nanoTime() - startTime;
-
-                        System.out.println("BULK - batch time: {} {} ms"+
-                                estimatedTime * 0.000001 + " "+
-                                bulkItemResponses.getItems().length);
-
-                        if (bulkItemResponses.hasFailures()) {
-                            logger.error("{}", bulkItemResponses.buildFailureMessage());
-                        }
-
-                        Response response = new Response();
-                        response.setCallbackIndex(msg.getCallbackIndex());
-                        response.setObject(new Map[0]);
-
-                        conn.send( new Gson().toJson(response) );
-                    }
-
-                    @Override
-                    public void onFailure(Exception ex) {
-                        System.out.println("BULK - error: {}"+ msg.getObject());
-                        logger.error("{}", ex);
-
-                        Response response = new Response();
-                        response.setCallbackIndex(msg.getCallbackIndex());
-                        response.setObject(new Map[0]);
-
-                        conn.send( new Gson().toJson(response) );
-                    }
-                });
-
-                break;
-            }
-
+    protected void doFailure(WebSocket conn, String callback, Exception ex) {
+        /* Wrap exception message on result set*/
+        ArrayList<Map<String, Object>> err = new ArrayList<>();
+        err.add(ImmutableMap.of("Exception", ex.getMessage()));
+
+        if (ex.getCause() != null) {
+            err.add(ImmutableMap.of("Exception", ex.getCause().getMessage()));
         }
+
+        Response out = new Response(callback, -1, err, ex);
+        logger.error("{}", ex);
+        logger.error("{}", ex.getCause());
+
+
+        /* Send outgoing message to client */
+        conn.send( new Gson().toJson(out) );
     }
 
     @Override
-    public void onError(WebSocket webSocket, Exception exception) {
-        System.out.println( "Error: " + exception.toString());
-        logger.error(exception.getMessage());
-        exception.printStackTrace();
+    protected void doOK(WebSocket conn, String callback, Response out) {
+        out.setCallbackId(callback);
+        logger.debug("");
+
+        /* Send outgoing message to client */
+        conn.send( new Gson().toJson(out) );
     }
+
+    /* ---------------------------------------------------------------------------
+     * WebSocket Server
+     * ---------------------------------------------------------------------------
+     */
 
     @Override
     public void onStart() {
-        System.out.println("Trueno Bridge server is up" );
-        System.out.println("Trueno Bridge Server ["
-                + this.configuration.getString(CONFIG_CLUSTER_NAME) + "]"
-                + " is listening at port "
-                + this.configuration.getString(CONFIG_CLUSTER_PORT));
 
-        /* Display configuration values */
-        System.out.println(" =============================================== ");
-        System.out.format("   cluster          [%s]\n", configuration.getString(CONFIG_CLUSTER_NAME));
-        System.out.format("   port             [%d]\n", configuration.getInt(CONFIG_CLUSTER_PORT));
-        System.out.format("   default shards   [%d]\n", configuration.getLong(CONFIG_DEFAULT_SHARDS));
-        System.out.format("   default replicas [%d]\n", configuration.getLong(CONFIG_DEFAULT_REPLICAS));
-        System.out.format("   path home        [%s]\n", configuration.getString(CONFIG_PATH_HOME));
-        System.out.format("   path config      [%s]\n", configuration.getString(CONFIG_PATH_CFG));
-        System.out.println(" =============================================== ");
     }
 
-    /* Main */
-    public static void main(String args[]) throws UnknownHostException {
+    @Override
+    public void onError(WebSocket conn, Exception ex) {
+        super.onError(conn, ex);
 
+        logger.error("{}", ex);
+    }
+
+    /* ---------------------------------------------------------------------------
+     * Actions
+     * ---------------------------------------------------------------------------
+     */
+
+    @Override
+    public Response create(ActionResponse response) {
+
+        CreateIndexResponse create = (CreateIndexResponse) response;
+
+        /* Return response message */
+        return TypeHelper.getEmptyResponse();
+    }
+
+    @Override
+    public Response drop(ActionResponse response) {
+
+        DeleteIndexResponse delete = (DeleteIndexResponse) response;
+
+        /* Return response message */
+        return TypeHelper.getEmptyResponse();
+    }
+
+    @Override
+    public Response search(ActionResponse response) {
+
+        SearchResponse search = (SearchResponse) response;
+
+        /* Collecting results */
+        ArrayList<Map<String,Object>> sources = new ArrayList<>();
+        SearchHit[] results = search.getHits().getHits();
+
+        /* Iterate thru results */
+        for(SearchHit h: results){
+            sources.add(ImmutableMap.of("_source", h.getSource()));
+        }
+
+        /* Return response message */
+        return TypeHelper.arrayList2Response(sources);
+    }
+
+    @Override
+    public Response persist(ActionResponse response) {
+
+        IndexResponse persist = (IndexResponse)response;
+
+        /* Return response message */
+        return TypeHelper.getEmptyResponse();
+    }
+
+    @Override
+    public Response bulk(ActionResponse response) {
+
+        BulkResponse bulk = (BulkResponse) response;
+
+        /* Check for errors */
+        if (bulk.hasFailures()) {
+            logger.error("{}", bulk.buildFailureMessage());
+        }
+
+        /* Return response message */
+        return TypeHelper.getEmptyResponse();
+    }
+
+    /* ---------------------------------------------------------------------------
+     * Main
+     * ---------------------------------------------------------------------------
+     */
+    public static void main(String args[]) throws UnknownHostException {
         PropertiesConfiguration configuration;
 
         /* Check args list, if there's no arg then load params from config file */
         if (args.length > 0) {
 
+            /**
+             * arg 1: hostname
+             * arg 2: port
+             * arg 3: default shards (index creation)
+             * arg 4: default replicas (index creation)
+             */
+
             String host = args[0];
             long port   = Integer.parseInt(args[1]);
-            long shards   = (args.length > 2) ? Integer.parseInt(args[2]) : DEFAULT_SHARDS;
-            long replicas = (args.length > 3) ? Integer.parseInt(args[3]) : DEFAULT_REPLICAS;
 
             configuration = new PropertiesConfiguration();
             configuration.setProperty(CONFIG_CLUSTER_NAME, host);
             configuration.setProperty(CONFIG_CLUSTER_PORT, port);
-            configuration.setProperty(CONFIG_DEFAULT_SHARDS, shards);
-            configuration.setProperty(CONFIG_DEFAULT_REPLICAS, replicas);
+
+            if (args.length > 2) {
+                configuration.setProperty(CONFIG_DEFAULT_SHARDS, Integer.parseInt(args[2]));
+            }
+
+            if (args.length > 3) {
+                configuration.setProperty(CONFIG_DEFAULT_REPLICAS, Integer.parseInt(args[3]));
+            }
+
 
         } else {
 
@@ -404,9 +225,8 @@ public class Server extends WebSocketServer {
         }
 
         /* Start the server */
-        Server myserver = new Server(configuration, null);
+        Server myserver = new Server(configuration);
         myserver.start();
-
     }
 
 }
