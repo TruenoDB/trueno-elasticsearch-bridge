@@ -1,20 +1,25 @@
 package org.trueno.es.bridge;
 
-import org.elasticsearch.action.Action;
-import org.elasticsearch.action.ActionResponse;
-import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
-import org.elasticsearch.action.search.SearchResponse;
-import org.trueno.es.bridge.comm.Response;
-
 /**
+ * Possible actions that handles the Core Manager Server.
+ *
  * @author ebarsallo
  */
-public interface TruenoActions {
+public enum TruenoActions {
+    SEARCH,
+    BULK,
+    PERSIST,
+    CREATE,
+    OPEN,
+    DROP;
 
-    Response create(ActionResponse response);
-    Response drop(ActionResponse response);
-    Response persist(ActionResponse response);
-    Response bulk(ActionResponse response);
-    Response search(ActionResponse response);
+    public static TruenoActions fromString(String str) {
+        for (TruenoActions a : TruenoActions.values()) {
+            if (a.name().equalsIgnoreCase(str)) {
+                return a;
+            }
+        }
+
+        throw new IllegalArgumentException(String.format("No constant with value '%s' found", str));
+    }
 }

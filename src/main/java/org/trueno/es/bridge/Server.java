@@ -6,6 +6,7 @@ import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.convert.DefaultListDelimiterHandler;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.ActionResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse;
@@ -21,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.trueno.es.bridge.action.ErrorObject;
 import org.trueno.es.bridge.comm.Message;
 import org.trueno.es.bridge.comm.Response;
 
@@ -28,6 +30,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**
  * @author Victor Santos U.
@@ -36,14 +39,6 @@ import java.util.Map;
 public class Server extends AbstractServer {
 
     public static final Logger logger = LoggerFactory.getLogger(Server.class);
-
-    /* Configuration keys */
-    static final String CONFIG_CLUSTER_NAME     = "elasticsearch.cluster.name";
-    static final String CONFIG_CLUSTER_PORT     = "elasticsearch.cluster.port";
-    static final String CONFIG_PATH_HOME        = "elasticsearch.path.home";
-    static final String CONFIG_PATH_CFG         = "elasticsearch.path.config";
-    static final String CONFIG_DEFAULT_SHARDS   = "elasticsearch.default.shards";
-    static final String CONFIG_DEFAULT_REPLICAS = "elasticsearch.default.replicas";
 
 
     /**
@@ -61,26 +56,17 @@ public class Server extends AbstractServer {
      */
 
     @Override
-    protected void doFailure(WebSocket conn, String callback, Exception ex) {
+    protected void doFailure(WebSocket conn, ErrorObject error, String callback, Exception ex) {
         /* Wrap exception message on result set*/
-        ArrayList<Map<String, Object>> err = new ArrayList<>();
-        err.add(ImmutableMap.of("Exception", ex.getMessage()));
-
-        if (ex.getCause() != null) {
-            err.add(ImmutableMap.of("Exception", ex.getCause().getMessage()));
-        }
-
-        Response out = new Response(callback, -1, err, ex);
-        logger.error("{}", ex);
-        logger.error("{}", ex.getCause());
-
+        Response out = new Response(callback, -1, TypeHelper.emptySet(), ex);
+        logger.error("Index: [{}] Action: [{}]", error.getIndex(), error.getAction(),ex);
 
         /* Send outgoing message to client */
         conn.send( new Gson().toJson(out) );
     }
 
     @Override
-    protected void doOK(WebSocket conn, String callback, Response out) {
+    protected void doOK(WebSocket conn, TruenoActions actions, String callback, Response out) {
         out.setCallbackId(callback);
         logger.debug("");
 
@@ -95,7 +81,7 @@ public class Server extends AbstractServer {
 
     @Override
     public void onStart() {
-
+        super.onStart();
     }
 
     @Override
@@ -190,8 +176,8 @@ public class Server extends AbstractServer {
             long port   = Integer.parseInt(args[1]);
 
             configuration = new PropertiesConfiguration();
-            configuration.setProperty(CONFIG_CLUSTER_NAME, host);
-            configuration.setProperty(CONFIG_CLUSTER_PORT, port);
+            configuration.setProperty(CONFIG_NODE_HOST, host);
+            configuration.setProperty(CONFIG_NODE_PORT, port);
 
             if (args.length > 2) {
                 configuration.setProperty(CONFIG_DEFAULT_SHARDS, Integer.parseInt(args[2]));
@@ -225,7 +211,16 @@ public class Server extends AbstractServer {
         }
 
         /* Start the server */
-        Server myserver = new Server(configuration);
+        Server myserver;
+
+        try {
+            myserver = new Server(configuration);
+        } catch (NoSuchElementException ex) {
+            logger.error("Missing parameter required for start the Server: {}",
+                    StringUtils.substringBetween(ex.getLocalizedMessage(), "'"),
+                    ex);
+            return;
+        }
         myserver.start();
     }
 

@@ -12,10 +12,7 @@ import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 
-import org.trueno.es.bridge.action.BulkObject;
-import org.trueno.es.bridge.action.DocumentObject;
-import org.trueno.es.bridge.action.IndexObject;
-import org.trueno.es.bridge.action.SearchObject;
+import org.trueno.es.bridge.action.*;
 import org.trueno.es.bridge.comm.Message;
 import org.trueno.es.bridge.comm.Response;
 import org.trueno.es.bridge.exception.NoMappingFoundException;
@@ -23,11 +20,12 @@ import org.trueno.es.client.ElasticTransportClient;
 
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.NoSuchElementException;
 
 /**
  * @author ebarsallo
  */
-public abstract class AbstractServer extends WebSocketServer implements TruenoActions {
+public abstract class AbstractServer extends WebSocketServer implements ServerActions {
 
     /* Configuration keys */
     static final String CONFIG_CLUSTER_NAME  = "cluster.name";
@@ -47,18 +45,18 @@ public abstract class AbstractServer extends WebSocketServer implements TruenoAc
     static final long   DEFAULT_ES_REPLICAS  = 1;
 
     /* Allowed action request */
-    static final String ACTION_SEARCH        = "SEARCH";
-    static final String ACTION_BULK          = "BULK";
-    static final String ACTION_PERSIST       = "PERSIST";
-    static final String ACTION_CREATE_GRAPH  = "CREATE";
-    static final String ACTION_OPEN_GRAPH    = "OPEN";
-    static final String ACTION_DROP_GRAPH    = "DROP";
+//    static final String ACTION_SEARCH        = "SEARCH";
+//    static final String ACTION_BULK          = "BULK";
+//    static final String ACTION_PERSIST       = "PERSIST";
+//    static final String ACTION_CREATE_GRAPH  = "CREATE";
+//    static final String ACTION_OPEN_GRAPH    = "OPEN";
+//    static final String ACTION_DROP_GRAPH    = "DROP";
 
 
     /* Elasticsearch Client */
     private final ElasticTransportClient client;
     /* Configuration */
-    private PropertiesConfiguration config;
+    protected PropertiesConfiguration config;
 
 
 
@@ -71,7 +69,7 @@ public abstract class AbstractServer extends WebSocketServer implements TruenoAc
      *
      * @param config  the {@link PropertiesConfiguration} instance with all the params needed.
      */
-    AbstractServer(PropertiesConfiguration config) {
+    AbstractServer(PropertiesConfiguration config) throws NoSuchElementException {
 
         /* Construct instance */
         super(new InetSocketAddress(
@@ -79,10 +77,40 @@ public abstract class AbstractServer extends WebSocketServer implements TruenoAc
                 config.getInt(CONFIG_NODE_PORT)
         ));
 
+        this.config = config;
+
+        /* Establish connection with Elasticsearch backend */
         String cluster = config.getString(CONFIG_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
-        String host    = config.getString(CONFIG_NODE_ADDR);
+        String host    = config.getString(CONFIG_NODE_HOST);
         client = new ElasticTransportClient(cluster, host);
         client.connect();
+    }
+
+    /* ---------------------------------------------------------------------------
+     * Helpers
+     * ---------------------------------------------------------------------------
+     */
+
+    /**
+     * Display on console the initial stats for the Server.
+     */
+    private void initStats() {
+        System.out.println("Trueno Bridge server is up" );
+        System.out.println("Trueno Bridge Server ["
+                + config.getString(CONFIG_NODE_HOST) + "]"
+                + " is listening at port "
+                + config.getString(CONFIG_NODE_PORT));
+
+        /* Display configuration values */
+        System.out.println(" =============================================== ");
+        System.out.format("   cluster          [%s]\n", config.getString(CONFIG_CLUSTER_NAME, DEFAULT_CLUSTER_NAME));
+        System.out.format("   host             [%s]\n", config.getString(CONFIG_NODE_HOST));
+        System.out.format("   port             [%d]\n", config.getInt(CONFIG_NODE_PORT));
+        System.out.format("   default shards   [%d]\n", config.getLong(CONFIG_DEFAULT_SHARDS));
+        System.out.format("   default replicas [%d]\n", config.getLong(CONFIG_DEFAULT_REPLICAS));
+        System.out.format("   path home        [%s]\n", config.getString(CONFIG_PATH_HOME));
+        System.out.format("   path config      [%s]\n", config.getString(CONFIG_PATH_CFG));
+        System.out.println(" =============================================== ");
     }
 
     /* ---------------------------------------------------------------------------
@@ -90,7 +118,7 @@ public abstract class AbstractServer extends WebSocketServer implements TruenoAc
      * ---------------------------------------------------------------------------
      */
 
-    protected void doFailure(WebSocket conn, String callback, Exception ex) {
+    protected void doFailure(WebSocket conn, ErrorObject error, String callback, Exception ex) {
         Response out = new Response(callback, -1, TypeHelper.emptySet(), ex);
 
         /* Send outgoing message to client */
@@ -98,7 +126,7 @@ public abstract class AbstractServer extends WebSocketServer implements TruenoAc
 
     }
 
-    protected void doOK(WebSocket conn, String callback, Response out) {
+    protected void doOK(WebSocket conn, TruenoActions action, String callback, Response out) {
         out.setCallbackId(callback);
 
         /* Send outgoing message to client */
@@ -143,19 +171,19 @@ public abstract class AbstractServer extends WebSocketServer implements TruenoAc
                         @Override
                         public void onResponse(CreateIndexResponse response) {
                             Response msg = create(response);
-                            doOK(conn, in.getCallbackIdOK(), msg);
+                            doOK(conn, TruenoActions.CREATE, in.getCallbackIdOK(), msg);
                         }
 
                         @Override
                         public void onFailure(Exception ex) {
-                            doFailure(conn, in.getCallbackIdError(), ex);
+                            doFailure(conn, new ErrorObject(obj.getIndex(), TruenoActions.CREATE), in.getCallbackIdError(), ex);
                         }
                     });
 
         } catch (NoMappingFoundException ex) {
-            doFailure(conn, in.getCallbackIdError(), ex);
+            doFailure(conn, new ErrorObject(obj.getIndex(), TruenoActions.CREATE), in.getCallbackIdError(), ex);
         } catch (Exception ex) {
-            doFailure(conn, in.getCallbackIdError(), ex);
+            doFailure(conn, new ErrorObject(obj.getIndex(), TruenoActions.CREATE), in.getCallbackIdError(), ex);
         }
 
     }
@@ -171,16 +199,16 @@ public abstract class AbstractServer extends WebSocketServer implements TruenoAc
                         @Override
                         public void onResponse(DeleteIndexResponse response) {
                             Response msg = drop(response);
-                            doOK(conn, in.getCallbackIdOK(), msg);
+                            doOK(conn, TruenoActions.DROP, in.getCallbackIdOK(), msg);
                         }
 
                         @Override
                         public void onFailure(Exception ex) {
-                            doFailure(conn, in.getCallbackIdError(), ex);
+                            doFailure(conn, new ErrorObject(obj.getIndex(), TruenoActions.DROP), in.getCallbackIdError(), ex);
                         }
                     });
         } catch (Exception ex) {
-            doFailure(conn, in.getCallbackIdError(), ex);
+            doFailure(conn, new ErrorObject(obj.getIndex(), TruenoActions.DROP), in.getCallbackIdError(), ex);
         }
 
     }
@@ -196,16 +224,16 @@ public abstract class AbstractServer extends WebSocketServer implements TruenoAc
                 @Override
                 public void onResponse(BulkResponse response) {
                     Response msg = bulk(response);
-                    doOK(conn, in.getCallbackIdOK(), msg);
+                    doOK(conn, TruenoActions.BULK, in.getCallbackIdOK(), msg);
                 }
 
                 @Override
                 public void onFailure(Exception ex) {
-                    doFailure(conn, in.getCallbackIdError(), ex);
+                    doFailure(conn, new ErrorObject(obj.getIndex(), TruenoActions.BULK), in.getCallbackIdError(), ex);
                 }
             });
         } catch (Exception ex) {
-            doFailure(conn, in.getCallbackIdError(), ex);
+            doFailure(conn, new ErrorObject(obj.getIndex(), TruenoActions.BULK), in.getCallbackIdError(), ex);
         }
 
     }
@@ -221,17 +249,17 @@ public abstract class AbstractServer extends WebSocketServer implements TruenoAc
                 @Override
                 public void onResponse(IndexResponse response) {
                     Response msg = persist(response);
-                    doOK(conn, in.getCallbackIdOK(), msg);
+                    doOK(conn, TruenoActions.PERSIST, in.getCallbackIdOK(), msg);
 
                 }
 
                 @Override
                 public void onFailure(Exception ex) {
-                    doFailure(conn, in.getCallbackIdError(), ex);
+                    doFailure(conn, new ErrorObject(obj.getIndex(), TruenoActions.PERSIST), in.getCallbackIdError(), ex);
                 }
             });
         } catch (Exception ex) {
-            doFailure(conn, in.getCallbackIdError(), ex);
+            doFailure(conn, new ErrorObject(obj.getIndex(), TruenoActions.PERSIST), in.getCallbackIdError(), ex);
         }
 
     }
@@ -246,16 +274,16 @@ public abstract class AbstractServer extends WebSocketServer implements TruenoAc
                         @Override
                         public void onResponse(SearchResponse response) {
                             Response msg = search(response);
-                            doOK(conn, in.getCallbackIdOK(), msg);
+                            doOK(conn, TruenoActions.SEARCH, in.getCallbackIdOK(), msg);
                         }
 
                         @Override
                         public void onFailure(Exception ex) {
-                            doFailure(conn, in.getCallbackIdError(), ex);
+                            doFailure(conn, new ErrorObject(obj.getIndex(), TruenoActions.SEARCH), in.getCallbackIdError(), ex);
                         }
                     });
         } catch (Exception ex) {
-            doFailure(conn, in.getCallbackIdError(), ex);
+            doFailure(conn, new ErrorObject(obj.getIndex(), TruenoActions.SEARCH), in.getCallbackIdError(), ex);
         }
 
     }
@@ -271,29 +299,29 @@ public abstract class AbstractServer extends WebSocketServer implements TruenoAc
 
         Message incoming = new Gson().fromJson(message, Message.class);
 
-        switch (incoming.getAction().toUpperCase()) {
+        switch (TruenoActions.fromString(incoming.getAction())) {
 
-            case ACTION_CREATE_GRAPH: {
+            case CREATE: {
                 doCreate(conn, incoming);
                 break;
             }
 
-            case ACTION_DROP_GRAPH: {
+            case DROP: {
                 doDrop(conn, incoming);
                 break;
             }
 
-            case ACTION_BULK: {
+            case BULK: {
                 doBulk(conn, incoming);
                 break;
             }
 
-            case ACTION_PERSIST: {
+            case PERSIST: {
                 doPersist(conn, incoming);
                 break;
             }
 
-            case ACTION_SEARCH: {
+            case SEARCH: {
                 doSearch(conn, incoming);
                 break;
             }
@@ -304,7 +332,7 @@ public abstract class AbstractServer extends WebSocketServer implements TruenoAc
 
     @Override
     public void onStart() {
-
+        initStats();
     }
 
     @Override
