@@ -2,12 +2,12 @@
 
 /**
  * @author Edgardo A. Barsallo Yi (ebarsallo)
- * @modified Victor Santos Uceta (vsantos)
+ * @author Victor Santos Uceta (vsantos)
  *
  * Test suite for Trueno Elasticsearch Bridge Server.
  * Read test.
  * @module test/read-test
- * @see module:path/referencedModuleName
+ * @see test:lib/test
  */
 
 /* import modules */
