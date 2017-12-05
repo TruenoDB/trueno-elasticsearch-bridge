@@ -21,19 +21,10 @@ var ws;
 /* server address */
 var url = 'ws://localhost:8007';
 
-// var limit = 10000000;
-// var total = 0;
-// var counter = 0;
-// const INTERVAL = 1;
-// var queue = [];
-
 /* input for test */
 const input = __dirname + '/../data/film-10.csv';
 /* database */
 const dbName = "film";
-
-// var hrstart;
-// var hrend;
 
 function getData(id, resolve, reject, total) {
 
